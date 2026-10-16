@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ScanAlways.DefenderWatchdog</RootNamespace>
+    <AssemblyName>ScanAlways.DefenderWatchdog</AssemblyName>
+    <Description>Read-only Microsoft Defender health watchdog for the ScanAlways suite. Runs as a module inside the ScanAlways hub.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScanAlways.Common\ScanAlways.Common.csproj" />
+  </ItemGroup>
+
+</Project>

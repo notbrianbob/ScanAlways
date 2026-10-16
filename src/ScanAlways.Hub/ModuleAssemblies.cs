@@ -1,5 +1,7 @@
 using System.Reflection;
+using ScanAlways.Canary;
 using ScanAlways.Decoy;
+using ScanAlways.DefenderWatchdog;
 
 namespace ScanAlways.Hub;
 
@@ -12,5 +14,7 @@ internal static class ModuleAssemblies
     public static readonly Assembly[] All =
     {
         typeof(DecoyModule).Assembly,
+        typeof(CanaryModule).Assembly,
+        typeof(DefenderWatchdogModule).Assembly,
     };
 }

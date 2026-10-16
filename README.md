@@ -53,8 +53,8 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 | Module | Status | What it does |
 |--------|--------|--------------|
 | **Always-Scanning Decoy** ([`src/ScanAlways.Decoy`](src/ScanAlways.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/ScanAlways.Decoy/README.md). |
-| **Canary file watcher** | In progress | Plants decoy files in key folders and alerts when anything touches them: an early ransomware tripwire. |
-| **Defender health watchdog** | In progress | Checks that Defender's real-time protection, signatures, and tamper protection stay on, and alerts if something turns them off. |
+| **Canary File Watcher** ([`src/ScanAlways.Canary`](src/ScanAlways.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/ScanAlways.Canary/README.md). |
+| **Defender Health Watchdog** ([`src/ScanAlways.DefenderWatchdog`](src/ScanAlways.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/ScanAlways.DefenderWatchdog/README.md). |
 
 ## How it fits together
 
@@ -63,9 +63,9 @@ ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows ser
 ├── reads appsettings.json
 ├── discovers the modules it was built with
 └── runs every enabled module side by side
-    ├── Decoy      ── Modules:Decoy:Enabled
-    ├── Canary     ── Modules:Canary:Enabled     (coming)
-    └── Watchdog   ── Modules:Watchdog:Enabled   (coming)
+    ├── Decoy             ── Modules:Decoy:Enabled
+    ├── Canary            ── Modules:Canary:Enabled
+    └── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
 ```
 
 The hub isolates modules from each other: if one fails it is logged and
@@ -106,6 +106,12 @@ sc.exe create "ScanAlways Protection" binPath= "C:\ScanAlways\ScanAlways.Protect
 sc.exe start "ScanAlways Protection"
 ```
 
+A service runs as LocalSystem by default, so folders that default to "your"
+profile (the decoy's scan roots, the canary's Desktop/Documents/Pictures)
+resolve to the system profile instead. Either run the service under your own
+account (`obj= ".\you" password= ...`) or list your folders explicitly in
+`Decoy:ScanRoots` and `Canary:Folders`.
+
 To remove it:
 
 ```powershell
@@ -118,7 +124,7 @@ sc.exe delete "ScanAlways Protection"
 Everything lives in `appsettings.json` next to the executable
 ([source](src/ScanAlways.Hub/appsettings.json)). Any value can also be
 overridden with an environment variable or a command-line switch, for example
-`--Modules:Decoy:Enabled=false`.
+`--Modules:Canary:Enabled=false`.
 
 ```jsonc
 {
@@ -127,17 +133,23 @@ overridden with an environment variable or a command-line switch, for example
     "RestartDelaySeconds": 30,      // first back-off; doubles each time
     "MaxRestartDelaySeconds": 600
   },
-  "Modules": {
-    "Decoy": { "Enabled": true }    // one switch per module
+  "Modules": {                      // one switch per module
+    "Decoy":            { "Enabled": true },
+    "Canary":           { "Enabled": true },
+    "DefenderWatchdog": { "Enabled": true }
   },
-  "Decoy": { /* the decoy's own settings; see its README */ }
+  // Each module's own settings live in a section named after it; see its README.
+  "Decoy": { },
+  "Canary": { },
+  "DefenderWatchdog": { }
 }
 ```
 
 ## Honest limits
 
-- ScanAlways **does not detect or remove malware**. If something is already
-  running on your machine, use Defender or another real scanner.
+- ScanAlways **does not detect or remove malware**. The canary watcher and
+  Defender watchdog raise alarms; they do not stop anything. If something is
+  already running on your machine, use Defender or another real scanner.
 - Deception only works on malware that checks for the signals we emulate. Many
   threats do not check, and those will not be slowed down.
 - Every module runs in user mode. An attacker with administrator rights can
@@ -150,22 +162,28 @@ overridden with an environment variable or a command-line switch, for example
 ```
 ScanAlways.sln
 ├── src/
-│   ├── ScanAlways.Common/   # Shared library: module contract, hub supervisor, decoy engine
-│   ├── ScanAlways.Hub/      # The hub executable (console app / Windows service)
-│   └── ScanAlways.Decoy/    # Module: always-scanning decoy
+│   ├── ScanAlways.Common/            # Shared library: module contract, hub supervisor, decoy engine, rolling log
+│   ├── ScanAlways.Hub/               # The hub executable (console app / Windows service)
+│   ├── ScanAlways.Decoy/             # Module: always-scanning decoy
+│   ├── ScanAlways.Canary/            # Module: canary file watcher (ransomware tripwire)
+│   └── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
 ├── tests/
 │   ├── ScanAlways.Common.Tests/
-│   └── ScanAlways.Decoy.Tests/
+│   ├── ScanAlways.Decoy.Tests/
+│   ├── ScanAlways.Canary.Tests/
+│   └── ScanAlways.DefenderWatchdog.Tests/
 └── docs/
-    └── adding-a-tool.md     # How to write a new module
+    └── adding-a-tool.md              # How to write a new module
 ```
 
 ## Design principles
 
 - **User mode, no kernel drivers.** Nothing here installs a driver or needs
   tricks that only work as SYSTEM.
-- **Harmless by construction.** Modules read and observe; they never touch,
-  hook, or impersonate Defender's own components.
+- **Harmless by construction.** Modules read and observe; they do not modify,
+  quarantine, or delete your files (the canary watcher only writes the decoy
+  files it creates itself), and they never touch, hook, or impersonate
+  Defender's own components.
 - **Honest about limits.** Every module's README says plainly what it does and
   what it cannot do.
 - **One process, many small tools.** Each tool is its own project and module,
@@ -175,8 +193,8 @@ ScanAlways.sln
 
 - [x] Always-scanning decoy
 - [x] Hub that runs every tool as a module
-- [ ] Canary (honeypot) file watcher
-- [ ] Defender health watchdog
+- [x] Canary (honeypot) file watcher
+- [x] Defender health watchdog
 - [ ] Persistence and autostart auditor
 - [ ] Measured overhead benchmarks
 

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ScanAlways.Canary</RootNamespace>
+    <AssemblyName>ScanAlways.Canary</AssemblyName>
+    <Description>Canary (honeypot) file watcher for the ScanAlways suite: a ransomware-style tripwire. Runs as a module inside the ScanAlways hub.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScanAlways.Common\ScanAlways.Common.csproj" />
+  </ItemGroup>
+
+</Project>

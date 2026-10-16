@@ -16,7 +16,8 @@ itself, register its services, and run until it is told to stop.
 ## 2. Implement the module contract
 
 Implement `ScanAlways.Common.Modules.IScanAlwaysModule` with a public
-parameterless constructor:
+parameterless constructor. A trimmed version of the canary module
+(`src/ScanAlways.Canary/CanaryModule.cs`):
 
 ```csharp
 using Microsoft.Extensions.Configuration;
@@ -32,11 +33,10 @@ public sealed class CanaryModule : IScanAlwaysModule
     public string Description => "Plants decoy files and alerts when anything touches them.";
     public bool EnabledByDefault => true;
 
-    public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddOptions<CanaryOptions>().Bind(configuration.GetSection("Canary"));
-        services.AddSingleton<CanaryWatcher>();
-    }
+    // AddScanAlwaysCanary binds CanaryOptions from the "Canary" section and
+    // registers CanaryWatcher.
+    public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+        services.AddScanAlwaysCanary(configuration);
 
     public Task RunAsync(IServiceProvider services, CancellationToken cancellationToken) =>
         services.GetRequiredService<CanaryWatcher>().RunAsync(cancellationToken);
@@ -65,6 +65,8 @@ Modules are discovered at compile time; nothing is loaded from disk at runtime.
    {
        typeof(DecoyModule).Assembly,
        typeof(CanaryModule).Assembly,
+       typeof(DefenderWatchdogModule).Assembly,
+       typeof(YourModule).Assembly,
    };
    ```
 
@@ -72,17 +74,17 @@ Modules are discovered at compile time; nothing is loaded from disk at runtime.
 
    ```json
    "Modules": {
-     "Decoy":  { "Enabled": true },
-     "Canary": { "Enabled": true }
+     "Decoy":    { "Enabled": true },
+     "YourTool": { "Enabled": true }
    },
-   "Canary": { }
+   "YourTool": { }
    ```
 
 Check it with `dotnet run --project src/ScanAlways.Hub -- --list-modules`.
 
 ## 4. Test it
 
-Create `tests/ScanAlways.<Tool>.Tests` (copy `tests/ScanAlways.Decoy.Tests`)
+Create `tests/ScanAlways.<Tool>.Tests` (copy `tests/ScanAlways.Decoy.Tests` or `tests/ScanAlways.Canary.Tests`)
 and add it with `dotnet sln add ... --solution-folder tests`. At minimum:
 
 - `ModuleCatalog.Discover(typeof(YourModule).Assembly)` finds your module with
