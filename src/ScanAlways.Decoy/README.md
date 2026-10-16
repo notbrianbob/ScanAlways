@@ -9,7 +9,7 @@ This tool manufactures those signs on an ordinary machine around the clock, so
 that a sample relying on "the coast is clear" may keep its head down. That is
 the entire idea.
 
-It runs as a module inside the [ScanAlways hub](../ScanAlways.Hub/), the
+It runs as a module inside the [WatchLattice hub](../ScanAlways.Hub/), the
 background **Windows service** (or plain console process, for testing) named
 **ScanAlways Protection**, alongside Microsoft Defender. It is enabled by
 default; turn it off with `Modules:Decoy:Enabled = false`.

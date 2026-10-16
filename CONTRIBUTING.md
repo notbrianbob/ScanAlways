@@ -1,6 +1,6 @@
-# Contributing to ScanAlways
+# Contributing to WatchLattice
 
-Thanks for helping. ScanAlways is a suite of small tools that run **alongside**
+Thanks for helping. WatchLattice is a suite of small tools that run **alongside**
 Microsoft Defender, so the most important rule is that nothing here may make a
 machine less safe than it was before.
 
@@ -27,8 +27,8 @@ Windows 11 is the target platform, but the solution builds and tests on Linux
 and macOS too.
 
 ```bash
-git clone https://github.com/notbrianbob/ScanAlways.git
-cd ScanAlways
+git clone https://github.com/notbrianbob/WatchLattice.git
+cd WatchLattice
 dotnet build -c Release
 dotnet test  -c Release
 ```

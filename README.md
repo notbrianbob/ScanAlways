@@ -1,15 +1,22 @@
-# ScanAlways
+# WatchLattice
 
-[![CI](https://github.com/notbrianbob/ScanAlways/actions/workflows/ci.yml/badge.svg)](https://github.com/notbrianbob/ScanAlways/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/notbrianbob/ScanAlways/actions/workflows/codeql.yml/badge.svg)](https://github.com/notbrianbob/ScanAlways/actions/workflows/codeql.yml)
+[![CI](https://github.com/notbrianbob/WatchLattice/actions/workflows/ci.yml/badge.svg)](https://github.com/notbrianbob/WatchLattice/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/notbrianbob/WatchLattice/actions/workflows/codeql.yml/badge.svg)](https://github.com/notbrianbob/WatchLattice/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)
 ![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6)
 
-A suite of small, complementary defense tools for Windows 11, designed to run
-**alongside** Microsoft Defender, never instead of it. All tools run together
-inside one lightweight background service, the **ScanAlways hub**, and each
-one can be switched on or off in a single config file.
+**Layered defense. Independent tools. Clear signals.**
+
+WatchLattice is an experimental, open-source Windows security toolkit that
+complements Microsoft Defender with deception-based defenses, ransomware
+tripwires, and continuous security-health monitoring. It is a supplement to a
+real anti-malware product, not a replacement for one.
+
+The tools are small and built for Windows 11, and they run **alongside**
+Defender, never instead of it. All of them run together inside one lightweight
+background service, the **WatchLattice hub**, and each one can be switched on
+or off in a single config file.
 
 ## Why complement Defender?
 
@@ -18,14 +25,14 @@ commodity malware is routinely tested against Defender before it is released,
 and many samples check for it specifically. Far fewer are built to anticipate
 small, unfamiliar tools.
 
-ScanAlways leans on that gap. Each module adds a cheap, slightly unusual layer
+WatchLattice leans on that gap. Each module adds a cheap, slightly unusual layer
 of deception or early warning that a given sample was probably not built to
 expect. It is defense in depth: Defender stays your primary engine for
-detection and removal, and ScanAlways adds friction and tripwires around it.
+detection and removal, and WatchLattice adds friction and tripwires around it.
 
 ## Threat model
 
-**What ScanAlways is meant to help with**
+**What WatchLattice is meant to help with**
 
 - Commodity malware and ransomware on a single-user Windows 11 machine, running
   with the logged-in user's privileges.
@@ -37,7 +44,7 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 **Assumptions**
 
 - Microsoft Defender (or another real anti-malware product) is installed, up
-  to date, and running. ScanAlways never replaces it.
+  to date, and running. WatchLattice never replaces it.
 - The attacker does not already have administrator or SYSTEM rights. An
   attacker with those can stop any user-mode tool, including this one.
 
@@ -45,7 +52,7 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 
 - Targeted attacks by someone who studies the machine before acting.
 - Kernel-mode threats, bootkits, and firmware implants.
-- Detecting or removing malware. ScanAlways modules observe, deceive, and
+- Detecting or removing malware. WatchLattice modules observe, deceive, and
   alert; they do not quarantine or delete anything.
 
 ## Tools
@@ -73,13 +80,23 @@ restarted with back-off, and the rest keep running. Modules are compiled into
 the hub; nothing is loaded from a plugins folder at runtime, so there is no
 way to drop a DLL next to the service and have it executed.
 
+## Demos and measured results
+
+[`demos/`](demos/) holds reproducible demonstrations of what each module
+actually does, with measured overhead and the method used to measure it:
+the decoy's CPU, read I/O and memory at each intensity, a canary being tripped
+(with a control file that must not trip it), and the Defender watchdog's
+readout for healthy and degraded states. They show signals and costs, not
+protection against real malware, which these demos do not test. Latest
+numbers: [demos/RESULTS.md](demos/RESULTS.md).
+
 ## Quick start
 
 You need Windows 11 and the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```bash
-git clone https://github.com/notbrianbob/ScanAlways.git
-cd ScanAlways
+git clone https://github.com/notbrianbob/WatchLattice.git
+cd WatchLattice
 dotnet build -c Release
 dotnet test  -c Release
 ```
@@ -147,7 +164,7 @@ overridden with an environment variable or a command-line switch, for example
 
 ## Honest limits
 
-- ScanAlways **does not detect or remove malware**. The canary watcher and
+- WatchLattice **does not detect or remove malware**. The canary watcher and
   Defender watchdog raise alarms; they do not stop anything. If something is
   already running on your machine, use Defender or another real scanner.
 - Deception only works on malware that checks for the signals we emulate. Many
@@ -172,9 +189,18 @@ ScanAlways.sln
 │   ├── ScanAlways.Decoy.Tests/
 │   ├── ScanAlways.Canary.Tests/
 │   └── ScanAlways.DefenderWatchdog.Tests/
+├── demos/
+│   ├── ScanAlways.Demos/             # Demo and measurement harness (not shipped)
+│   ├── scripts/                      # Windows scripts that observe the real hub process
+│   └── RESULTS.md                    # Latest measured results
 └── docs/
     └── adding-a-tool.md              # How to write a new module
 ```
+
+The code still uses the project's original name, `ScanAlways`, for its
+projects, namespaces, binary (`ScanAlways.Protection.Service.exe`), service
+name and data folders. Those are kept for now so existing installs and open
+work keep working.
 
 ## Design principles
 
@@ -196,7 +222,7 @@ ScanAlways.sln
 - [x] Canary (honeypot) file watcher
 - [x] Defender health watchdog
 - [ ] Persistence and autostart auditor
-- [ ] Measured overhead benchmarks
+- [x] Reproducible demos and measured overhead
 
 ## Contributing and security
 
@@ -209,5 +235,5 @@ Please report vulnerabilities privately as described in
 
 ## License
 
-[MIT](LICENSE). ScanAlways is early and experimental; use it as an extra layer
+[MIT](LICENSE). WatchLattice is early and experimental; use it as an extra layer
 on top of a real, up-to-date anti-malware product.

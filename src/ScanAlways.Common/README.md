@@ -1,6 +1,6 @@
 # ScanAlways.Common
 
-Shared, tool-agnostic library for the ScanAlways suite. Code that more than one
+Shared, tool-agnostic library for the WatchLattice suite. Code that more than one
 tool would want lives here so the individual tools stay thin.
 
 ## What's here today

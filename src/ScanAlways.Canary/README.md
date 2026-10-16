@@ -53,7 +53,7 @@ strong early signal that a process is mass-modifying your documents.
 
 ## Run
 
-This tool runs as the `Canary` module inside the [ScanAlways hub](../ScanAlways.Hub/),
+This tool runs as the `Canary` module inside the [WatchLattice hub](../ScanAlways.Hub/),
 alongside the other tools. It is enabled by default; turn it off with
 `Modules:Canary:Enabled = false`.
 

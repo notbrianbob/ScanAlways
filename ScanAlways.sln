@@ -16,6 +16,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Hub", "src\ScanAlways.Hub\ScanAlways.Hub.csproj", "{AA01908C-85D0-475A-9972-91EB1FC58CEF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Decoy.Tests", "tests\ScanAlways.Decoy.Tests\ScanAlways.Decoy.Tests.csproj", "{E63B9A18-A5AC-425E-A9F3-FB22047A6D31}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Canary", "src\ScanAlways.Canary\ScanAlways.Canary.csproj", "{5A7B5F11-769E-47F7-8BFE-3B62AF1286AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.DefenderWatchdog", "src\ScanAlways.DefenderWatchdog\ScanAlways.DefenderWatchdog.csproj", "{68CBBE78-CA91-4C47-AF85-BFD1C612FAE4}"
@@ -23,6 +24,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Canary.Tests", "tests\ScanAlways.Canary.Tests\ScanAlways.Canary.Tests.csproj", "{CE004EE9-7555-4847-A561-EFAD53116821}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.DefenderWatchdog.Tests", "tests\ScanAlways.DefenderWatchdog.Tests\ScanAlways.DefenderWatchdog.Tests.csproj", "{75E741FB-CD5D-49AB-824F-136386C7417B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "demos", "demos", "{CB787047-7556-41FC-B161-827558A2DB18}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Demos", "demos\ScanAlways.Demos\ScanAlways.Demos.csproj", "{91A9C5E2-B0F2-488C-8E42-7A2312065F2A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +74,10 @@ Global
 		{75E741FB-CD5D-49AB-824F-136386C7417B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75E741FB-CD5D-49AB-824F-136386C7417B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75E741FB-CD5D-49AB-824F-136386C7417B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91A9C5E2-B0F2-488C-8E42-7A2312065F2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91A9C5E2-B0F2-488C-8E42-7A2312065F2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91A9C5E2-B0F2-488C-8E42-7A2312065F2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91A9C5E2-B0F2-488C-8E42-7A2312065F2A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{35BE1A69-3A68-4758-B875-0DBEFA5ECF29} = {58108381-0033-46B2-9AC9-0D7DC1BF8836}
@@ -80,5 +89,6 @@ Global
 		{68CBBE78-CA91-4C47-AF85-BFD1C612FAE4} = {58108381-0033-46B2-9AC9-0D7DC1BF8836}
 		{CE004EE9-7555-4847-A561-EFAD53116821} = {AFF5D81C-4459-4B9A-B35C-C87B27194823}
 		{75E741FB-CD5D-49AB-824F-136386C7417B} = {AFF5D81C-4459-4B9A-B35C-C87B27194823}
+		{91A9C5E2-B0F2-488C-8E42-7A2312065F2A} = {CB787047-7556-41FC-B161-827558A2DB18}
 	EndGlobalSection
 EndGlobal

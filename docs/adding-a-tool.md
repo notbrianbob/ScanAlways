@@ -1,6 +1,6 @@
 # Adding a new tool to the suite
 
-Every ScanAlways tool is a **module** that runs inside the hub
+Every WatchLattice tool is a **module** that runs inside the hub
 (`ScanAlways.Protection.Service`). The hub owns the process, logging,
 configuration, and Windows-service plumbing; a module only has to describe
 itself, register its services, and run until it is told to stop.
@@ -109,7 +109,7 @@ These are non-negotiable for the suite's "harmless, complementary" promise:
 - Don't modify, quarantine, or delete user files unless that is explicitly the
   module's stated job and the README says so loudly.
 - Never disable, impersonate, or hook Microsoft Defender's components in a way
-  that could break real protection. ScanAlways runs *alongside* Defender.
+  that could break real protection. WatchLattice runs *alongside* Defender.
 - Keep overhead modest and configurable (CPU, disk, memory). The hub runs every
   module in one process, so a greedy module slows the whole suite.
 - Put code in `ScanAlways.Common` only once a second module needs it.

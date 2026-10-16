@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        New tools plug into the hub as modules. Please read [docs/adding-a-tool.md](https://github.com/notbrianbob/ScanAlways/blob/main/docs/adding-a-tool.md) first, especially the guardrails.
+        New tools plug into the hub as modules. Please read [docs/adding-a-tool.md](https://github.com/notbrianbob/WatchLattice/blob/main/docs/adding-a-tool.md) first, especially the guardrails.
   - type: input
     id: name
     attributes:
