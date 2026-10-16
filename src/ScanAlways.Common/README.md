@@ -36,7 +36,7 @@ The first tool (the always-scanning decoy) drove the initial contents:
 ### Shared alerts and state
 
 - **`IAlertPublisher` / `AlertHub`** — bounded structured history used by
-  Canary, Defender, Persistence, and module supervision. No disk work or UI
+  Canary, Defender, Firewall, Persistence, and module supervision. No disk work or UI
   callbacks run inside an alert publisher.
 - **`AlertDeliveryService`** — writes the local feed and heartbeat, restores
   history, and tolerates delivery failures independently of monitoring.

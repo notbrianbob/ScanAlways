@@ -66,6 +66,7 @@ Modules are discovered at compile time; nothing is loaded from disk at runtime.
        typeof(DecoyModule).Assembly,
        typeof(CanaryModule).Assembly,
        typeof(DefenderWatchdogModule).Assembly,
+       typeof(FirewallWatchdogModule).Assembly,
        typeof(PersistenceModule).Assembly,
        typeof(YourModule).Assembly,
    };
