@@ -28,7 +28,8 @@ public class Sha256SumsTests
     [Fact]
     public void Compute_And_Matches_AgreeOnKnownValue()
     {
-        var actual = Sha256Sums.Compute(new MemoryStream("test"u8.ToArray()));
+        using var stream = new MemoryStream("test"u8.ToArray());
+        var actual = Sha256Sums.Compute(stream);
 
         Assert.Equal(Hash, actual);
         Assert.True(Sha256Sums.Matches(actual, Hash.ToUpperInvariant()));

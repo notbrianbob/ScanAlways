@@ -23,7 +23,8 @@ public static class PackageExtractor
             if (name.Length == 0 || name.StartsWith('/') || name.Contains(':') || name.Contains('\0')
                 || name.Split('/').Any(part => part is ".." or "."))
                 throw new InvalidDataException($"The package contains an unsafe path: {entry.FullName}");
-            var target = Path.GetFullPath(Path.Combine(destination, name));
+            // Join never discards the destination the way Combine does for a rooted name.
+            var target = Path.GetFullPath(Path.Join(destination, name));
             if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException($"The package contains an unsafe path: {entry.FullName}");
             if (name.EndsWith('/'))

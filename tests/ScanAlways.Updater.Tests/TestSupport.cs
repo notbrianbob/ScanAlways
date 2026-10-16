@@ -42,13 +42,15 @@ internal sealed class FakeHttpHandler : HttpMessageHandler
 
     public void Add(string url, string body) => Add(url, Encoding.UTF8.GetBytes(body));
 
+    private static HttpResponseMessage NotFound() => new(HttpStatusCode.NotFound);
+
     public void Add(string url, HttpStatusCode status) => _routes[url] = () => new HttpResponseMessage(status);
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Requests.Add(request.RequestUri!);
-        var response = _routes.TryGetValue(request.RequestUri!.ToString(), out var route)
-            ? route() : new HttpResponseMessage(HttpStatusCode.NotFound);
+        var route = _routes.GetValueOrDefault(request.RequestUri!.ToString(), NotFound);
+        var response = route();
         response.RequestMessage ??= request;
         return Task.FromResult(response);
     }
@@ -124,5 +126,9 @@ internal static class Releases
         return buffer.ToArray();
     }
 
-    public static string Sha256(byte[] bytes) => Sha256Sums.Compute(new MemoryStream(bytes));
+    public static string Sha256(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        return Sha256Sums.Compute(stream);
+    }
 }
