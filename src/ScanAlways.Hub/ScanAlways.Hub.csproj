@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ScanAlways.Hub</RootNamespace>
+    <!-- A plausible, scanner-like process name for the resident hub (the decoy relies on it). -->
+    <AssemblyName>ScanAlways.Protection.Service</AssemblyName>
+    <Description>The ScanAlways hub: one process that runs every enabled tool as a module. Runs as a console app or Windows service.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScanAlways.Common\ScanAlways.Common.csproj" />
+    <ProjectReference Include="..\ScanAlways.Decoy\ScanAlways.Decoy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

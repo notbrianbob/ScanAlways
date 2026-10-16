@@ -9,8 +9,10 @@ This tool manufactures those signs on an ordinary machine around the clock, so
 that a sample relying on "the coast is clear" may keep its head down. That is
 the entire idea.
 
-It runs as a background **Windows service** (or a plain console process for
-testing) under the name **ScanAlways Protection**, alongside Microsoft Defender.
+It runs as a module inside the [ScanAlways hub](../ScanAlways.Hub/), the
+background **Windows service** (or plain console process, for testing) named
+**ScanAlways Protection**, alongside Microsoft Defender. It is enabled by
+default; turn it off with `Modules:Decoy:Enabled = false`.
 
 ## What it actually does
 
@@ -27,7 +29,7 @@ cap, and a max file size) so CPU and disk overhead stay modest.
 
 ## Signals it emulates
 
-- **A scanner-named process always resident.** The service binary is
+- **A scanner-named process always resident.** The hub binary is
   `ScanAlways.Protection.Service.exe`, and it registers as the
   *ScanAlways Protection* Windows service — a plausible always-on security
   service in the process/service list.
@@ -66,8 +68,9 @@ anti-malware product — **never** as a replacement for one.
 
 ## Configuration
 
-Settings live in [`appsettings.json`](appsettings.json) under the `Decoy`
-section (overridable via environment variables or command-line switches):
+Settings live in the hub's [`appsettings.json`](../ScanAlways.Hub/appsettings.json)
+under the `Decoy` section (overridable via environment variables or
+command-line switches):
 
 | Key | Default | Meaning |
 |-----|---------|---------|
@@ -81,24 +84,13 @@ section (overridable via environment variables or command-line switches):
 
 ## Run it
 
-As a console app (for testing — Ctrl+C to stop):
+The decoy runs as part of the hub. As a console app (for testing; Ctrl+C to
+stop):
 
 ```bash
-dotnet run -c Release --project src/ScanAlways.Decoy
+dotnet run -c Release --project src/ScanAlways.Hub
 ```
 
-Install as a Windows service (run from an elevated PowerShell on the target
-machine):
-
-```powershell
-dotnet publish src/ScanAlways.Decoy -c Release -r win-x64 --self-contained false -o C:\ScanAlways
-sc.exe create "ScanAlways Protection" binPath= "C:\ScanAlways\ScanAlways.Protection.Service.exe" start= auto
-sc.exe start "ScanAlways Protection"
-```
-
-To remove it:
-
-```powershell
-sc.exe stop "ScanAlways Protection"
-sc.exe delete "ScanAlways Protection"
-```
+To install the hub as a Windows service, see
+[Install as a Windows service](../../README.md#install-as-a-windows-service)
+in the top-level README.
