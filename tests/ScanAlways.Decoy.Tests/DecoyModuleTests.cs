@@ -24,7 +24,7 @@ public class DecoyModuleTests
         var dir = Directory.CreateTempSubdirectory("scanalways-decoy-module");
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(dir.FullName, "sample.txt"), "hello");
+            await File.WriteAllTextAsync(Path.Join(dir.FullName, "sample.txt"), "hello");
 
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
