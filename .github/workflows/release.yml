@@ -36,6 +36,8 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Named RELEASE_VERSION, not VERSION: MSBuild reads environment variables
+      # as properties, so VERSION would stamp the test build as a release too.
       - name: Resolve version
         shell: pwsh
         run: |
@@ -44,7 +46,7 @@ jobs:
           }
           $version = $Matches[1]
           if ($version -match '(^|[.-])dev([.-]|$)') { throw "Release versions must not contain 'dev'; the updater treats those as development builds." }
-          "VERSION=$version" >> $env:GITHUB_ENV
+          "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
 
       - name: Test
         run: dotnet test -c Release
@@ -53,13 +55,13 @@ jobs:
         shell: pwsh
         run: |
           $stage = Join-Path $env:RUNNER_TEMP 'package'
-          dotnet publish src/ScanAlways.Hub  -c Release -r win-x64 --self-contained false -p:Version=$env:VERSION -o (Join-Path $stage 'Hub')
-          dotnet publish src/ScanAlways.Tray -c Release -r win-x64 --self-contained false -p:Version=$env:VERSION -o (Join-Path $stage 'Tray')
+          dotnet publish src/ScanAlways.Hub  -c Release -r win-x64 --self-contained false -p:Version=$env:RELEASE_VERSION -o (Join-Path $stage 'Hub')
+          dotnet publish src/ScanAlways.Tray -c Release -r win-x64 --self-contained false -p:Version=$env:RELEASE_VERSION -o (Join-Path $stage 'Tray')
           Copy-Item LICENSE, README.md $stage
           Get-ChildItem $stage -Recurse -Filter *.pdb | Remove-Item
 
           New-Item -ItemType Directory -Force dist | Out-Null
-          $zip = "dist/WatchLattice-$env:VERSION-win-x64.zip"
+          $zip = "dist/WatchLattice-$env:RELEASE_VERSION-win-x64.zip"
           # .NET's ZipFile writes forward-slash entry names, which the updater expects.
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, (Join-Path (Resolve-Path dist).Path (Split-Path $zip -Leaf)))
@@ -78,6 +80,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $flags = @('--verify-tag', '--generate-notes', '--title', "WatchLattice $env:VERSION")
-          if ($env:VERSION.Contains('-')) { $flags += '--prerelease' }
-          gh release create $env:TAG dist/WatchLattice-$env:VERSION-win-x64.zip dist/SHA256SUMS.txt @flags
+          $flags = @('--verify-tag', '--generate-notes', '--title', "WatchLattice $env:RELEASE_VERSION")
+          if ($env:RELEASE_VERSION.Contains('-')) { $flags += '--prerelease' }
+          gh release create $env:TAG dist/WatchLattice-$env:RELEASE_VERSION-win-x64.zip dist/SHA256SUMS.txt @flags
