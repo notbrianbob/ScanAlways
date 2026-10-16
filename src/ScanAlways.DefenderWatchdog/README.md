@@ -38,7 +38,7 @@ contains no `Set-Mp*`, `Add-Mp*` or `Remove-Mp*` calls. It launches the in-box
 Windows PowerShell by full path so a lookalike `powershell.exe` on `PATH` can't
 answer for Defender.
 
-## Configuration (`appsettings.json`, section `DefenderWatchdog`)
+## Configuration (hub `appsettings.json`, section `DefenderWatchdog`)
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -50,11 +50,17 @@ answer for Defender.
 
 ## Run
 
+This tool runs as the `DefenderWatchdog` module inside the [ScanAlways hub](../ScanAlways.Hub/),
+alongside the other tools. It is enabled by default; turn it off with
+`Modules:DefenderWatchdog:Enabled = false`.
+
 ```powershell
-dotnet run --project src/ScanAlways.DefenderWatchdog
-# or as a Windows service
-sc.exe create "ScanAlways Defender Watchdog" binPath= "C:\path\to\ScanAlways.DefenderWatchdog.exe"
+dotnet run -c Release --project src/ScanAlways.Hub
 ```
+
+To install the hub as a Windows service, see
+[Install as a Windows service](../../README.md#install-as-a-windows-service)
+in the top-level README.
 
 ## Honest limits
 

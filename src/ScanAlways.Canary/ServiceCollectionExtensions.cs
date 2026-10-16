@@ -7,9 +7,8 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the canary watcher and binds <see cref="CanaryOptions"/> from
-    /// the "Canary" configuration section. A host adds
-    /// <see cref="CanaryWorker"/> (or drives <see cref="CanaryWatcher"/>
-    /// itself) to run it.
+    /// the "Canary" configuration section. <see cref="CanaryModule"/> runs it
+    /// inside the hub.
     /// </summary>
     public static IServiceCollection AddScanAlwaysCanary(
         this IServiceCollection services,

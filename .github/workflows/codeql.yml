@@ -1,0 +1,62 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so new CodeQL queries run against unchanged code too.
+    - cron: '27 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # GitHub only accepts code scanning results from public repositories (or
+  # private ones with GitHub Code Security). Skip the analysis while the repo is
+  # private so it doesn't fail on upload; it starts running on its own once the
+  # repo goes public.
+  visibility:
+    name: Check repository visibility
+    runs-on: ubuntu-latest
+    outputs:
+      private: ${{ steps.repo.outputs.private }}
+    steps:
+      - id: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "private=$(gh api repos/${{ github.repository }} --jq .private)" >> "$GITHUB_OUTPUT"
+
+  analyze:
+    name: Analyze (C#)
+    needs: visibility
+    if: needs.visibility.outputs.private == 'false'
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          build-mode: manual
+          queries: security-and-quality
+
+      - name: Build
+        run: dotnet build -c Release
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:csharp

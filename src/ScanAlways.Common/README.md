@@ -5,6 +5,18 @@ tool would want lives here so the individual tools stay thin.
 
 ## What's here today
 
+### Module hosting (`ScanAlways.Common.Modules`)
+
+- **`IScanAlwaysModule`**: the contract every tool implements so the hub can
+  run it. See [docs/adding-a-tool.md](../../docs/adding-a-tool.md).
+- **`ModuleCatalog`**: compile-time discovery of modules in a set of
+  assemblies, id validation, and the `Modules:<Id>:Enabled` switches.
+- **`ModuleSupervisor`**: runs every enabled module side by side and restarts
+  a failing one with back-off, without affecting the others.
+- **`HubOptions`** and **`AddScanAlwaysHub`**: hub settings and DI wiring.
+
+### Decoy engine
+
 The first tool (the always-scanning decoy) drove the initial contents:
 
 - **`DecoyOptions`** — configuration for the decoy, including intensity profiles

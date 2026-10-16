@@ -37,7 +37,7 @@ strong early signal that a process is mass-modifying your documents.
   the watcher stops. Canaries in a folder you remove from the configuration are
   cleaned up on the next start.
 
-## Configuration (`appsettings.json`, section `Canary`)
+## Configuration (hub `appsettings.json`, section `Canary`)
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -53,11 +53,17 @@ strong early signal that a process is mass-modifying your documents.
 
 ## Run
 
+This tool runs as the `Canary` module inside the [ScanAlways hub](../ScanAlways.Hub/),
+alongside the other tools. It is enabled by default; turn it off with
+`Modules:Canary:Enabled = false`.
+
 ```powershell
-dotnet run --project src/ScanAlways.Canary
-# or as a Windows service
-sc.exe create "ScanAlways Canary Watcher" binPath= "C:\path\to\ScanAlways.Canary.exe"
+dotnet run -c Release --project src/ScanAlways.Hub
 ```
+
+To install the hub as a Windows service, see
+[Install as a Windows service](../../README.md#install-as-a-windows-service)
+in the top-level README.
 
 A service runs under its own account, and the default folders (Desktop,
 Documents, Pictures) resolve to *that* account's profile. When installing as a

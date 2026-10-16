@@ -11,8 +11,8 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers the Defender watchdog and binds
     /// <see cref="DefenderWatchdogOptions"/> from the "DefenderWatchdog"
-    /// configuration section. A host adds <see cref="DefenderWatchdogWorker"/>
-    /// (or drives <see cref="DefenderWatchdog"/> itself) to run it.
+    /// configuration section. <see cref="DefenderWatchdogModule"/> runs it
+    /// inside the hub.
     /// </summary>
     public static IServiceCollection AddScanAlwaysDefenderWatchdog(
         this IServiceCollection services,

@@ -1,0 +1,40 @@
+name: New tool proposal
+description: Propose a new complementary tool (module) for the suite.
+labels: [new-tool]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        New tools plug into the hub as modules. Please read [docs/adding-a-tool.md](https://github.com/notbrianbob/ScanAlways/blob/main/docs/adding-a-tool.md) first, especially the guardrails.
+  - type: input
+    id: name
+    attributes:
+      label: Tool name
+      placeholder: e.g. Canary file watcher
+    validations:
+      required: true
+  - type: textarea
+    id: signal
+    attributes:
+      label: What signal or behavior does it add?
+      description: Concretely, what does it observe or emulate, and which attacker behavior does it make harder or more visible?
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Honest limits
+      description: What will it not protect against? How could an attacker get around it?
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Guardrails
+      options:
+        - label: Runs in user mode only (no kernel drivers).
+          required: true
+        - label: Never disables, hooks, or impersonates Microsoft Defender components.
+          required: true
+        - label: Has modest, configurable overhead.
+          required: true

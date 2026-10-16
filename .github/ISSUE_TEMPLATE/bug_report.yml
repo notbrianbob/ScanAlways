@@ -1,0 +1,61 @@
+name: Bug report
+description: Something in ScanAlways is not working as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. **If this is a security issue, do not file it here** — see [SECURITY.md](https://github.com/notbrianbob/ScanAlways/blob/main/SECURITY.md).
+  - type: input
+    id: module
+    attributes:
+      label: Affected module
+      description: Which tool/module, or "hub" if it is the host itself. `ScanAlways.Protection.Service --list-modules` shows them.
+      placeholder: e.g. Decoy
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configure ...
+        2. Run ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: The relevant parts of appsettings.json. Remove any personal paths you do not want to share.
+      render: json
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Service or console log output around the problem.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: e.g. main @ abc1234
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: e.g. Windows 11 24H2 (26100.xxxx)
+  - type: checkboxes
+    id: defender
+    attributes:
+      label: Defender interaction
+      options:
+        - label: This issue involves Microsoft Defender behaving differently while ScanAlways runs.

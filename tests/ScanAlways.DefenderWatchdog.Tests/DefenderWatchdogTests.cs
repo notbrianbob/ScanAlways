@@ -55,7 +55,12 @@ public class DefenderWatchdogTests : IDisposable
         Assert.Equal(RealTimeOff, Assert.Single(cleared).Code);
         Assert.Single(raised);
 
-        var log = File.ReadAllText(_logPath);
+        // The watchdog still holds the log open for writing, so read it the way
+        // a log viewer would: sharing write access. (Windows refuses a plain
+        // File.ReadAllText here.)
+        using var reader = new StreamReader(
+            new FileStream(_logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete));
+        var log = reader.ReadToEnd();
         Assert.Contains("DEFENDER ALERT", log);
         Assert.Contains("Defender recovered", log);
     }
