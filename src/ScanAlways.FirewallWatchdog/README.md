@@ -53,7 +53,9 @@ Standing problems (a profile off, inbound allowed by default) are reported on
 `%LOCALAPPDATA%\ScanAlways\firewall-watchdog.log`, logs a warning or critical
 entry (Windows Event Log when running as a service), and raises `AlertRaised`.
 When it clears it logs a "recovered" line and raises `AlertCleared`. A problem
-that persists is not repeated every check. One-off changes (a new default
+that persists is not repeated every check, and a check that can't read the
+firewall at all never counts as a recovery: earlier problems stay open until a
+readable check shows them gone. One-off changes (a new default
 inbound action, a new rule) are logged as `FIREWALL CHANGE` lines and raise
 `ChangeDetected`.
 

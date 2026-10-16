@@ -106,6 +106,15 @@ public sealed class FirewallWatchdog : IDisposable
         }
 
         var current = report.Findings.ToDictionary(f => f.Code);
+        if (!status.Available)
+        {
+            // Not being able to look is not evidence that a problem went away,
+            // so keep earlier findings open instead of reporting a recovery.
+            foreach (var finding in _active.Values)
+            {
+                current.TryAdd(finding.Code, finding);
+            }
+        }
         if (_saveError is not null)
         {
             current[StateSaveFailed] = new FirewallFinding(StateSaveFailed, AlertSeverity.Warning,

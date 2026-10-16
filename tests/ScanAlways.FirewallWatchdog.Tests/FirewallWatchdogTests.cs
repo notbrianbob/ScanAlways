@@ -147,6 +147,28 @@ public class FirewallWatchdogTests : IDisposable
     }
 
     [Fact]
+    public async Task UnreadableStatus_DoesNotReportARecovery()
+    {
+        _provider.Status = TestData.Healthy().With("Public", enabled: false);
+        using var watchdog = Create();
+        var cleared = new List<FirewallFinding>();
+        watchdog.AlertCleared += cleared.Add;
+
+        await watchdog.CheckOnceAsync(default);
+        _provider.Status = FirewallStatus.Unavailable("query broken");
+        await watchdog.CheckOnceAsync(default);
+
+        Assert.Empty(cleared);
+
+        _provider.Status = TestData.Healthy();
+        await watchdog.CheckOnceAsync(default);
+
+        Assert.Equal(
+            new[] { ProfileDisabledPrefix + "PUBLIC", StatusUnavailable },
+            cleared.Select(f => f.Code).Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
     public async Task CorruptState_IsReportedOnce_AndWatchingContinues()
     {
         Directory.CreateDirectory(_folder);
