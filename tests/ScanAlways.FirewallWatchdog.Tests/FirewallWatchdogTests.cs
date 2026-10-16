@@ -8,14 +8,14 @@ namespace ScanAlways.FirewallWatchdog.Tests;
 
 public class FirewallWatchdogTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), $"scanalways-firewall-{Guid.NewGuid():N}");
+    private readonly string _folder = Path.Join(Path.GetTempPath(), $"scanalways-firewall-{Guid.NewGuid():N}");
     private readonly FakeProvider _provider = new();
 
     private FirewallWatchdogOptions Options(bool monitorRules = false) => new()
     {
         MonitorInboundAllowRules = monitorRules,
-        StatePath = Path.Combine(_folder, "state.json"),
-        AlertLogPath = Path.Combine(_folder, "firewall.log"),
+        StatePath = Path.Join(_folder, "state.json"),
+        AlertLogPath = Path.Join(_folder, "firewall.log"),
     };
 
     private FirewallWatchdog Create(FirewallWatchdogOptions? options = null, IAlertPublisher? alerts = null) => new(
@@ -150,7 +150,7 @@ public class FirewallWatchdogTests : IDisposable
     public async Task CorruptState_IsReportedOnce_AndWatchingContinues()
     {
         Directory.CreateDirectory(_folder);
-        await File.WriteAllTextAsync(Path.Combine(_folder, "state.json"), "{ not json");
+        await File.WriteAllTextAsync(Path.Join(_folder, "state.json"), "{ not json");
         using var watchdog = Create();
         var changes = new List<FirewallChange>();
         watchdog.ChangeDetected += changes.Add;
@@ -180,15 +180,10 @@ public class FirewallWatchdogTests : IDisposable
 
     public void Dispose()
     {
-        try
+        // Every watchdog is disposed by the end of its test, so nothing holds these files open.
+        if (Directory.Exists(_folder))
         {
             Directory.Delete(_folder, recursive: true);
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
         }
     }
 

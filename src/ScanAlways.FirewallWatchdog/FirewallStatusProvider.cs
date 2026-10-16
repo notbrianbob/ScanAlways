@@ -75,7 +75,7 @@ public sealed class PowerShellFirewallStatusProvider : IFirewallStatusProvider
 
         // Use the in-box Windows PowerShell by full path, so a lookalike
         // powershell.exe earlier on PATH can't answer for the firewall.
-        var powershell = Path.Combine(
+        var powershell = Path.Join(
             Environment.GetFolderPath(Environment.SpecialFolder.System),
             "WindowsPowerShell", "v1.0", "powershell.exe");
 
@@ -111,7 +111,14 @@ public sealed class PowerShellFirewallStatusProvider : IFirewallStatusProvider
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // It exited on its own between the timeout and the kill; nothing left to stop.
+                }
                 throw;
             }
 

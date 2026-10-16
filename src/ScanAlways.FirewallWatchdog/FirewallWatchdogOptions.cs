@@ -43,6 +43,6 @@ public sealed class FirewallWatchdogOptions
         {
             root = Path.GetTempPath();
         }
-        return Path.Combine(root, "ScanAlways", fileName);
+        return Path.Join(root, "ScanAlways", fileName);
     }
 }
