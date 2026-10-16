@@ -1,3 +1,4 @@
+using System.Reflection;
 using Xunit;
 
 namespace ScanAlways.Updater.Tests;
@@ -39,11 +40,15 @@ public class ReleaseVersionTests
     }
 
     [Fact]
-    public void FromAssembly_TreatsLocalBuildsAsDevelopmentBuilds()
+    public void FromAssembly_ReadsTheStampedVersion_AndSpotsDevelopmentBuilds()
     {
-        var version = ReleaseVersion.FromAssembly(typeof(UpdaterModule).Assembly);
+        // Local builds are 0.0.0-dev and release builds carry the tag, so only
+        // check that the stamped version parses and round-trips.
+        var assembly = typeof(UpdaterModule).Assembly;
+        var stamped = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+        Assert.Equal(ReleaseVersion.Parse(stamped), ReleaseVersion.FromAssembly(assembly));
 
-        Assert.True(version.IsDevelopmentBuild);
+        Assert.True(ReleaseVersion.Parse("0.0.0-dev+abc123").IsDevelopmentBuild);
         Assert.False(ReleaseVersion.Parse("1.0.0").IsDevelopmentBuild);
         Assert.False(ReleaseVersion.Parse("1.0.0-beta.1").IsDevelopmentBuild);
     }

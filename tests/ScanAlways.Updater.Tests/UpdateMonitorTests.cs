@@ -131,7 +131,8 @@ public class UpdateMonitorTests
         module.ConfigureServices(services, configuration);
         using var provider = services.BuildServiceProvider();
 
-        Assert.True(provider.GetRequiredService<UpdateMonitor>().Current.IsDevelopmentBuild);
+        Assert.Equal(ReleaseVersion.FromAssembly(typeof(UpdaterModule).Assembly),
+            provider.GetRequiredService<UpdateMonitor>().Current);
         Assert.Equal(24, provider.GetRequiredService<IOptions<UpdaterOptions>>().Value.CheckIntervalHours);
     }
 }
