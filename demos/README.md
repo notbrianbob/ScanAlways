@@ -17,12 +17,12 @@ Everything runs in user mode, in throwaway folders under your temp directory.
 
 ```bash
 # All three demos (about 4 minutes with the defaults)
-dotnet run -c Release --project demos/ScanAlways.Demos -- all
+dotnet run -c Release --project demos/WatchLattice.Demos -- all
 
 # One at a time
-dotnet run -c Release --project demos/ScanAlways.Demos -- decoy --seconds 60 --intensity Idle,Balanced,FullScan
-dotnet run -c Release --project demos/ScanAlways.Demos -- canary
-dotnet run -c Release --project demos/ScanAlways.Demos -- watchdog --live   # --live reads this machine's Defender status (Windows)
+dotnet run -c Release --project demos/WatchLattice.Demos -- decoy --seconds 60 --intensity Idle,Balanced,FullScan
+dotnet run -c Release --project demos/WatchLattice.Demos -- canary
+dotnet run -c Release --project demos/WatchLattice.Demos -- watchdog --live   # --live reads this machine's Defender status (Windows)
 ```
 
 On Windows, with PowerShell 7, this one also looks at the real hub process
@@ -54,9 +54,9 @@ attaches the results to the run.
 5. Copies the first lines of the scanner-style log it wrote.
 
 `Show-DecoySignals.ps1` complements this on Windows: it publishes and starts
-the actual hub (`ScanAlways.Protection.Service.exe`) with only the decoy
+the actual hub (`WatchLattice.Protection.Service.exe`) with only the decoy
 enabled, shows the resident process, reports whether the
-`ScanAlways Protection` service is installed, and measures that process from
+`WatchLattice Protection` service is installed, and measures that process from
 outside with `Get-Process` and `Win32_Process`.
 
 ### Canary file watcher

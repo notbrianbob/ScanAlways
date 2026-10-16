@@ -53,7 +53,7 @@ jobs:
         shell: pwsh
         run: |
           $live = if ($IsWindows) { '--live' } else { $null }
-          dotnet run -c Release --no-build --project demos/ScanAlways.Demos -- all --seconds $env:SECONDS_PER_WINDOW --out demo-results $live
+          dotnet run -c Release --no-build --project demos/WatchLattice.Demos -- all --seconds $env:SECONDS_PER_WINDOW --out demo-results $live
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-Content demo-results/summary.md | Add-Content $env:GITHUB_STEP_SUMMARY
 

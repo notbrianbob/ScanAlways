@@ -59,14 +59,14 @@ detection and removal, and WatchLattice adds friction and tripwires around it.
 
 | Module | Status | What it does |
 |--------|--------|--------------|
-| **Always-Scanning Decoy** ([`src/ScanAlways.Decoy`](src/ScanAlways.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/ScanAlways.Decoy/README.md). |
-| **Canary File Watcher** ([`src/ScanAlways.Canary`](src/ScanAlways.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/ScanAlways.Canary/README.md). |
-| **Defender Health Watchdog** ([`src/ScanAlways.DefenderWatchdog`](src/ScanAlways.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/ScanAlways.DefenderWatchdog/README.md). |
+| **Always-Scanning Decoy** ([`src/WatchLattice.Decoy`](src/WatchLattice.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/WatchLattice.Decoy/README.md). |
+| **Canary File Watcher** ([`src/WatchLattice.Canary`](src/WatchLattice.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/WatchLattice.Canary/README.md). |
+| **Defender Health Watchdog** ([`src/WatchLattice.DefenderWatchdog`](src/WatchLattice.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/WatchLattice.DefenderWatchdog/README.md). |
 
 ## How it fits together
 
 ```
-ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows service)
+WatchLattice.Protection.Service.exe  (the hub: one process, console or Windows service)
 ├── reads appsettings.json
 ├── discovers the modules it was built with
 └── runs every enabled module side by side
@@ -104,13 +104,13 @@ dotnet test  -c Release
 Run the hub in a console window (Ctrl+C to stop):
 
 ```bash
-dotnet run -c Release --project src/ScanAlways.Hub
+dotnet run -c Release --project src/WatchLattice.Hub
 ```
 
 See which modules are available and whether they are enabled:
 
 ```bash
-dotnet run -c Release --project src/ScanAlways.Hub -- --list-modules
+dotnet run -c Release --project src/WatchLattice.Hub -- --list-modules
 ```
 
 ### Install as a Windows service
@@ -118,9 +118,9 @@ dotnet run -c Release --project src/ScanAlways.Hub -- --list-modules
 From an elevated PowerShell:
 
 ```powershell
-dotnet publish src/ScanAlways.Hub -c Release -r win-x64 --self-contained false -o C:\ScanAlways
-sc.exe create "ScanAlways Protection" binPath= "C:\ScanAlways\ScanAlways.Protection.Service.exe" start= auto
-sc.exe start "ScanAlways Protection"
+dotnet publish src/WatchLattice.Hub -c Release -r win-x64 --self-contained false -o C:\WatchLattice
+sc.exe create "WatchLattice Protection" binPath= "C:\WatchLattice\WatchLattice.Protection.Service.exe" start= auto
+sc.exe start "WatchLattice Protection"
 ```
 
 A service runs as LocalSystem by default, so folders that default to "your"
@@ -132,14 +132,14 @@ account (`obj= ".\you" password= ...`) or list your folders explicitly in
 To remove it:
 
 ```powershell
-sc.exe stop "ScanAlways Protection"
-sc.exe delete "ScanAlways Protection"
+sc.exe stop "WatchLattice Protection"
+sc.exe delete "WatchLattice Protection"
 ```
 
 ## Configuration
 
 Everything lives in `appsettings.json` next to the executable
-([source](src/ScanAlways.Hub/appsettings.json)). Any value can also be
+([source](src/WatchLattice.Hub/appsettings.json)). Any value can also be
 overridden with an environment variable or a command-line switch, for example
 `--Modules:Canary:Enabled=false`.
 
@@ -177,30 +177,34 @@ overridden with an environment variable or a command-line switch, for example
 ## Repository layout
 
 ```
-ScanAlways.sln
+WatchLattice.sln
 ├── src/
-│   ├── ScanAlways.Common/            # Shared library: module contract, hub supervisor, decoy engine, rolling log
-│   ├── ScanAlways.Hub/               # The hub executable (console app / Windows service)
-│   ├── ScanAlways.Decoy/             # Module: always-scanning decoy
-│   ├── ScanAlways.Canary/            # Module: canary file watcher (ransomware tripwire)
-│   └── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── WatchLattice.Common/            # Shared library: module contract, hub supervisor, decoy engine, rolling log
+│   ├── WatchLattice.Hub/               # The hub executable (console app / Windows service)
+│   ├── WatchLattice.Decoy/             # Module: always-scanning decoy
+│   ├── WatchLattice.Canary/            # Module: canary file watcher (ransomware tripwire)
+│   └── WatchLattice.DefenderWatchdog/  # Module: Defender health watchdog
 ├── tests/
-│   ├── ScanAlways.Common.Tests/
-│   ├── ScanAlways.Decoy.Tests/
-│   ├── ScanAlways.Canary.Tests/
-│   └── ScanAlways.DefenderWatchdog.Tests/
+│   ├── WatchLattice.Common.Tests/
+│   ├── WatchLattice.Decoy.Tests/
+│   ├── WatchLattice.Canary.Tests/
+│   └── WatchLattice.DefenderWatchdog.Tests/
 ├── demos/
-│   ├── ScanAlways.Demos/             # Demo and measurement harness (not shipped)
+│   ├── WatchLattice.Demos/             # Demo and measurement harness (not shipped)
 │   ├── scripts/                      # Windows scripts that observe the real hub process
 │   └── RESULTS.md                    # Latest measured results
 └── docs/
     └── adding-a-tool.md              # How to write a new module
 ```
 
-The code still uses the project's original name, `ScanAlways`, for its
-projects, namespaces, binary (`ScanAlways.Protection.Service.exe`), service
-name and data folders. Those are kept for now so existing installs and open
-work keep working.
+### Upgrading from the ScanAlways name
+
+The project was called ScanAlways until October 2026. If you installed it
+under that name, remove the old service (`sc.exe stop "ScanAlways Protection"`
+then `sc.exe delete "ScanAlways Protection"`) before installing the new one.
+Logs and the canary manifest now live in `%LOCALAPPDATA%\WatchLattice`; the
+old `%LOCALAPPDATA%\ScanAlways` folder and any canaries it planted can be
+deleted by hand, and the new watcher will plant fresh ones.
 
 ## Design principles
 
@@ -213,7 +217,7 @@ work keep working.
 - **Honest about limits.** Every module's README says plainly what it does and
   what it cannot do.
 - **One process, many small tools.** Each tool is its own project and module,
-  shared code lives in `ScanAlways.Common`, and the hub runs them all.
+  shared code lives in `WatchLattice.Common`, and the hub runs them all.
 
 ## Roadmap
 
