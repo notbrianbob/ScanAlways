@@ -31,6 +31,12 @@ public sealed record DefenderStatus
     public string? SignatureVersion { get; init; }
     public DateTimeOffset? SignatureLastUpdated { get; init; }
 
+    /// <summary>Exclusions, ASR rules and cloud protection from <c>Get-MpPreference</c>. Null when they could not be read.</summary>
+    public DefenderSettings? Settings { get; init; }
+
+    /// <summary>Why <see cref="Settings"/> could not be read, when it is null.</summary>
+    public string? SettingsError { get; init; }
+
     public static DefenderStatus Unavailable(string error) => new() { Available = false, Error = error };
 }
 
@@ -65,6 +71,10 @@ public static class DefenderStatusParser
                 RunningMode = String(root, "AMRunningMode"),
                 SignatureVersion = String(root, "AntivirusSignatureVersion"),
                 SignatureLastUpdated = Date(root, "AntivirusSignatureLastUpdated"),
+                Settings = root.TryGetProperty("Preferences", out var preferences) && preferences.ValueKind == JsonValueKind.Object
+                    ? DefenderSettings.Parse(preferences)
+                    : null,
+                SettingsError = String(root, "PreferencesError"),
             };
         }
         catch (JsonException ex)

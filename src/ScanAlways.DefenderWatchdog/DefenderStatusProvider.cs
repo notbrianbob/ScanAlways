@@ -10,10 +10,12 @@ public interface IDefenderStatusProvider
 }
 
 /// <summary>
-/// Reads Defender's state with the documented <c>Get-MpComputerStatus</c>
-/// cmdlet from the Defender PowerShell module. It works for a standard
-/// (non-admin) user and is strictly read-only: the script only selects
-/// properties and never calls <c>Set-MpPreference</c> or anything like it.
+/// Reads Defender's state with the documented <c>Get-MpComputerStatus</c> and
+/// <c>Get-MpPreference</c> cmdlets from the Defender PowerShell module. Both
+/// work for a standard user, though Defender hides the exclusion lists unless
+/// the caller is elevated (the hub service is). It is strictly read-only: the
+/// script only selects properties and never calls <c>Set-MpPreference</c> or
+/// anything like it.
 /// </summary>
 public sealed class PowerShellDefenderStatusProvider : IDefenderStatusProvider
 {
@@ -23,6 +25,8 @@ public sealed class PowerShellDefenderStatusProvider : IDefenderStatusProvider
     public const string Script = """
         $ErrorActionPreference = 'Stop'
         $s = Get-MpComputerStatus
+        $p = $null; $pe = $null
+        try { $p = Get-MpPreference } catch { $pe = $_.Exception.Message }
         [pscustomobject]@{
             AMServiceEnabled              = $s.AMServiceEnabled
             AntivirusEnabled              = $s.AntivirusEnabled
@@ -34,7 +38,19 @@ public sealed class PowerShellDefenderStatusProvider : IDefenderStatusProvider
             AMRunningMode                 = [string]$s.AMRunningMode
             AntivirusSignatureVersion     = [string]$s.AntivirusSignatureVersion
             AntivirusSignatureLastUpdated = if ($s.AntivirusSignatureLastUpdated) { $s.AntivirusSignatureLastUpdated.ToUniversalTime().ToString('o') } else { $null }
-        } | ConvertTo-Json -Compress
+            PreferencesError              = $pe
+            Preferences                   = if ($p) { [pscustomobject]@{
+                ExclusionPath           = @($p.ExclusionPath | Where-Object { $_ } | ForEach-Object { [string]$_ })
+                ExclusionExtension      = @($p.ExclusionExtension | Where-Object { $_ } | ForEach-Object { [string]$_ })
+                ExclusionProcess        = @($p.ExclusionProcess | Where-Object { $_ } | ForEach-Object { [string]$_ })
+                ExclusionIpAddress      = @($p.ExclusionIpAddress | Where-Object { $_ } | ForEach-Object { [string]$_ })
+                AsrRuleIds              = @($p.AttackSurfaceReductionRules_Ids | Where-Object { $_ } | ForEach-Object { [string]$_ })
+                AsrRuleActions          = @($p.AttackSurfaceReductionRules_Actions | Where-Object { $null -ne $_ } | ForEach-Object { [int]$_ })
+                MAPSReporting           = if ($null -ne $p.MAPSReporting) { [int]$p.MAPSReporting } else { $null }
+                DisableBlockAtFirstSeen = $p.DisableBlockAtFirstSeen
+                CloudBlockLevel         = if ($null -ne $p.CloudBlockLevel) { [int]$p.CloudBlockLevel } else { $null }
+            } } else { $null }
+        } | ConvertTo-Json -Compress -Depth 4
         """;
 
     public async Task<DefenderStatus> GetStatusAsync(CancellationToken cancellationToken)

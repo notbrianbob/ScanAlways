@@ -21,14 +21,41 @@ public sealed class DefenderWatchdogOptions
     /// </summary>
     public bool TamperProtectionOffIsCritical { get; set; }
 
+    /// <summary>
+    /// Also watch Defender's exclusions, attack surface reduction rules and
+    /// cloud-delivered protection, and report changes to them. Read-only, like
+    /// everything else here.
+    /// </summary>
+    public bool MonitorSettings { get; set; } = true;
+
+    /// <summary>
+    /// Raise a standing warning for exclusions that cover a lot of ground: a
+    /// whole drive, Windows or temp folders, executable or script extensions,
+    /// or script hosts such as powershell.exe.
+    /// </summary>
+    public bool ReportBroadExclusions { get; set; } = true;
+
+    /// <summary>Exclusion values (wildcards * and ?) you added on purpose; they never raise an alert.</summary>
+    public string[] IgnoredExclusions { get; set; } = Array.Empty<string>();
+
+    /// <summary>At most this many individual setting-change alerts per check; the rest are summarized in one alert.</summary>
+    public int MaxChangeAlertsPerCheck { get; set; } = 10;
+
+    /// <summary>Last observed exclusions and ASR rules. Null picks %LOCALAPPDATA%\ScanAlways\defender-settings.json.</summary>
+    public string? StatePath { get; set; }
+
     /// <summary>Rolling alert log. Null picks %LOCALAPPDATA%\ScanAlways\defender-watchdog.log.</summary>
     public string? AlertLogPath { get; set; }
 
-    public string ResolveAlertLogPath()
+    public string ResolveAlertLogPath() => Resolve(AlertLogPath, "defender-watchdog.log");
+
+    public string ResolveStatePath() => Resolve(StatePath, "defender-settings.json");
+
+    private static string Resolve(string? configured, string fileName)
     {
-        if (!string.IsNullOrWhiteSpace(AlertLogPath))
+        if (!string.IsNullOrWhiteSpace(configured))
         {
-            return Environment.ExpandEnvironmentVariables(AlertLogPath);
+            return Environment.ExpandEnvironmentVariables(configured);
         }
 
         var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -36,6 +63,6 @@ public sealed class DefenderWatchdogOptions
         {
             root = Path.GetTempPath();
         }
-        return Path.Combine(root, "ScanAlways", "defender-watchdog.log");
+        return Path.Combine(root, "ScanAlways", fileName);
     }
 }
