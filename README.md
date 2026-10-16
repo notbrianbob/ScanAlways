@@ -61,6 +61,12 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 The optional **Windows tray companion** shows shared alerts, recent history,
 module run states, and hub connection status. See [alerts and tray setup](docs/alerts-and-tray.md).
 
+The **Update Checker** ([`src/ScanAlways.Updater`](src/ScanAlways.Updater/)) runs
+in the hub too. It checks this repository's GitHub Releases, tells you in the
+tray when a newer version is out, and installs it only when you choose
+**Install update**, after verifying the download's SHA-256 checksum. See its
+[README](src/ScanAlways.Updater/README.md) and [cutting a release](docs/releasing.md).
+
 ## How it fits together
 
 ```
@@ -72,10 +78,12 @@ ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows ser
     ├── Canary            ── Modules:Canary:Enabled
     ├── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
     ├── FirewallWatchdog  ── Modules:FirewallWatchdog:Enabled
-    └── Persistence       ── Modules:Persistence:Enabled
+    ├── Persistence       ── Modules:Persistence:Enabled
+    └── Updater           ── Modules:Updater:Enabled (checks only)
 
 ScanAlways.Tray.exe (runs in the signed-in user's session)
-└── reads the hub's local alert feed and shows notifications/status
+├── reads the hub's local alert feed and shows notifications/status
+└── Install update: starts the hub's --apply-update, elevated, on request
 ```
 
 The hub isolates modules from each other: if one fails it is logged and
@@ -153,7 +161,8 @@ overridden with an environment variable or a command-line switch, for example
     "Canary":           { "Enabled": true },
     "DefenderWatchdog": { "Enabled": true },
     "FirewallWatchdog": { "Enabled": true },
-    "Persistence":      { "Enabled": true }
+    "Persistence":      { "Enabled": true },
+    "Updater":          { "Enabled": true }
   },
   // Each module's own settings live in a section named after it; see its README.
   "Decoy": { },
@@ -161,6 +170,7 @@ overridden with an environment variable or a command-line switch, for example
   "DefenderWatchdog": { },
   "FirewallWatchdog": { },
   "Persistence": { },
+  "Updater": { },
   "Alerts": { "Enabled": true, "FeedPath": null, "HistoryLimit": 200 }
 }
 ```
@@ -189,6 +199,7 @@ ScanAlways.sln
 │   ├── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
 │   ├── ScanAlways.FirewallWatchdog/  # Module: Windows Firewall health watchdog
 │   ├── ScanAlways.Persistence/       # Module: persistence and autostart auditor
+│   ├── ScanAlways.Updater/           # Module + installer: update checks and verified installs
 │   └── ScanAlways.Tray/              # Windows tray notification companion
 ├── tests/
 │   ├── ScanAlways.Common.Tests/
@@ -196,10 +207,12 @@ ScanAlways.sln
 │   ├── ScanAlways.Canary.Tests/
 │   ├── ScanAlways.DefenderWatchdog.Tests/
 │   ├── ScanAlways.FirewallWatchdog.Tests/
-│   └── ScanAlways.Persistence.Tests/
+│   ├── ScanAlways.Persistence.Tests/
+│   └── ScanAlways.Updater.Tests/
 └── docs/
     ├── adding-a-tool.md              # How to write a new module
-    └── alerts-and-tray.md            # Shared alerts and tray deployment
+    ├── alerts-and-tray.md            # Shared alerts and tray deployment
+    └── releasing.md                  # Cutting a release the updater can install
 ```
 
 ## Design principles
@@ -225,6 +238,8 @@ ScanAlways.sln
 - [x] Opt-in monitoring of new inbound firewall allow rules
 - [x] Persistence and autostart auditor
 - [x] Shared alert delivery and Windows tray companion
+- [x] Update checks and verified, user-approved installs from GitHub Releases
+- [ ] Code-signed releases
 - [ ] Measured overhead benchmarks
 
 ## Contributing and security

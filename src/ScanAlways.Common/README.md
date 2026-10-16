@@ -42,6 +42,8 @@ The first tool (the always-scanning decoy) drove the initial contents:
   history, and tolerates delivery failures independently of monitoring.
 - **`AlertSnapshot` / `AlertNotificationCursor`** — shared feed format,
   freshness checks, and notification deduplication for the Windows tray.
+- **`UpdateNotice` / `IUpdateStatusPublisher`** — the update checker's result,
+  carried in the feed so the tray can show that an update is available.
 - **`AtomicJsonFile`** — bounded JSON reads and atomic replacement for the feed
   and persistence baseline.
 

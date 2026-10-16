@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 namespace ScanAlways.Common.Alerts;
 
 /// <summary>Thread-safe, bounded alert history. Publishers never wait on disk or UI callbacks.</summary>
-public sealed class AlertHub : IAlertPublisher
+public sealed class AlertHub : IAlertPublisher, IUpdateStatusPublisher
 {
     private readonly object _gate = new();
     private readonly List<ProtectionAlert> _history = new();
@@ -11,6 +11,7 @@ public sealed class AlertHub : IAlertPublisher
     private readonly int _limit;
     private readonly Guid _session = Guid.NewGuid();
     private long _revision;
+    private UpdateNotice? _update;
 
     public AlertHub(IOptions<AlertDeliveryOptions> options) => _limit = Math.Clamp(options.Value.HistoryLimit, 1, 1000);
 
@@ -39,6 +40,16 @@ public sealed class AlertHub : IAlertPublisher
         }
     }
 
+    public void SetUpdate(UpdateNotice? notice)
+    {
+        lock (_gate)
+        {
+            if (_update == notice) return;
+            _update = notice;
+            _revision++;
+        }
+    }
+
     public void RestoreHistory(IEnumerable<ProtectionAlert> history)
     {
         lock (_gate)
@@ -53,7 +64,7 @@ public sealed class AlertHub : IAlertPublisher
     public AlertSnapshot Snapshot(bool online = true)
     {
         lock (_gate) return new(AlertSnapshot.CurrentVersion, _session, DateTimeOffset.UtcNow, online,
-            _modules.Values.OrderBy(m => m.Id).ToArray(), _history.ToArray(), _revision);
+            _modules.Values.OrderBy(m => m.Id).ToArray(), _history.ToArray(), _revision, _update);
     }
 
     private void Trim()

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ScanAlways.Updater</RootNamespace>
+    <AssemblyName>ScanAlways.Updater</AssemblyName>
+    <Description>Update checker and verified installer for the ScanAlways suite. Checks run as a module inside the ScanAlways hub; installs run only on request.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScanAlways.Common\ScanAlways.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ScanAlways.Updater.Tests" />
+  </ItemGroup>
+
+</Project>
