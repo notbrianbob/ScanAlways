@@ -14,8 +14,25 @@ permissions:
   contents: read
 
 jobs:
+  # GitHub only accepts code scanning results from public repositories (or
+  # private ones with GitHub Code Security). Skip the analysis while the repo is
+  # private so it doesn't fail on upload; it starts running on its own once the
+  # repo goes public.
+  visibility:
+    name: Check repository visibility
+    runs-on: ubuntu-latest
+    outputs:
+      private: ${{ steps.repo.outputs.private }}
+    steps:
+      - id: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "private=$(gh api repos/${{ github.repository }} --jq .private)" >> "$GITHUB_OUTPUT"
+
   analyze:
     name: Analyze (C#)
+    needs: visibility
+    if: needs.visibility.outputs.private == 'false'
     runs-on: windows-latest
     permissions:
       contents: read
