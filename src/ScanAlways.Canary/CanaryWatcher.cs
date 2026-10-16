@@ -127,7 +127,7 @@ public sealed class CanaryWatcher : IDisposable
                 }
 
                 var state = _deployer.Verify(path);
-                if (state == CanaryState.Intact)
+                if (state is CanaryState.Intact or CanaryState.Unreadable)
                 {
                     continue;
                 }

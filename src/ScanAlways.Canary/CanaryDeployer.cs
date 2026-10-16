@@ -10,6 +10,12 @@ public enum CanaryState
     Intact,
     Missing,
     Changed,
+
+    /// <summary>
+    /// Briefly locked by another process (an antivirus or indexer scanning it).
+    /// Not an alert on its own: the next check, or the file watcher, decides.
+    /// </summary>
+    Unreadable,
 }
 
 /// <summary>The outcome of planting canaries at startup.</summary>
@@ -61,7 +67,7 @@ public sealed class CanaryDeployer
                 if (_manifest.Files.TryGetValue(path, out var expected))
                 {
                     var state = Verify(path, expected);
-                    if (state == CanaryState.Intact)
+                    if (state is CanaryState.Intact or CanaryState.Unreadable)
                     {
                         active.Add(path);
                         continue;
@@ -191,11 +197,15 @@ public sealed class CanaryDeployer
         {
             return CanaryState.Missing;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (UnauthorizedAccessException)
         {
-            // Locked or permission changed: a canary nobody should touch is
-            // being held open or re-permissioned, which is itself suspicious.
+            // Our own file's permissions were changed: nothing legitimate does that.
             return CanaryState.Changed;
+        }
+        catch (IOException)
+        {
+            // Usually a sharing violation while something scans the file.
+            return CanaryState.Unreadable;
         }
     }
 

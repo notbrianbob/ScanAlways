@@ -59,6 +59,11 @@ dotnet run --project src/ScanAlways.Canary
 sc.exe create "ScanAlways Canary Watcher" binPath= "C:\path\to\ScanAlways.Canary.exe"
 ```
 
+A service runs under its own account, and the default folders (Desktop,
+Documents, Pictures) resolve to *that* account's profile. When installing as a
+service, either run it under your own user account (`obj= ".\you" password= ...`)
+or list your folders explicitly in `Folders`.
+
 ## Honest limits
 
 - **It detects, it doesn't stop.** By the time a canary trips, ransomware has

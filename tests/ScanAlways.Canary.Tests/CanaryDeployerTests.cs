@@ -102,6 +102,25 @@ public class CanaryDeployerTests
     }
 
     [Fact]
+    public void Verify_TreatsAnExclusiveLockAsUnreadableNotTampered()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return; // Advisory locks on Unix don't block other readers.
+        }
+
+        using var temp = new TempFolder();
+        var deployer = new CanaryDeployer(temp.Options("a.docx"), NullLogger.Instance);
+        var path = deployer.Deploy().Active[0];
+
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Assert.Equal(CanaryState.Unreadable, deployer.Verify(path));
+        }
+        Assert.Equal(CanaryState.Intact, deployer.Verify(path));
+    }
+
+    [Fact]
     public void RemoveAll_DeletesOnlyIntactCanaries()
     {
         using var temp = new TempFolder();
