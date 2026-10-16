@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ScanAlways.Common;
+using ScanAlways.Common.Alerts;
 
 namespace ScanAlways.DefenderWatchdog;
 
@@ -21,6 +22,7 @@ public sealed class DefenderWatchdog : IDisposable
     private readonly DefenderWatchdogOptions _options;
     private readonly ILogger<DefenderWatchdog> _logger;
     private readonly Func<DateTimeOffset> _clock;
+    private readonly IAlertPublisher? _alerts;
     private Dictionary<string, DefenderFinding> _active = new();
     private ScanLogWriter? _alertLog;
     private bool _alertLogOpened;
@@ -29,12 +31,14 @@ public sealed class DefenderWatchdog : IDisposable
         IDefenderStatusProvider provider,
         IOptions<DefenderWatchdogOptions> options,
         ILogger<DefenderWatchdog> logger,
-        Func<DateTimeOffset>? clock = null)
+        Func<DateTimeOffset>? clock = null,
+        IAlertPublisher? alerts = null)
     {
         _provider = provider;
         _options = options.Value;
         _logger = logger;
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
+        _alerts = alerts;
     }
 
     /// <summary>Raised when a new problem appears (not on every check while it persists).</summary>
@@ -112,6 +116,9 @@ public sealed class DefenderWatchdog : IDisposable
 
     private void RaiseAlert(DefenderFinding finding)
     {
+        _alerts?.Publish("DefenderWatchdog", finding.Code,
+            finding.Severity == FindingSeverity.Critical ? AlertSeverity.Critical : AlertSeverity.Warning,
+            "Defender needs attention", finding.Message);
         var line = $"DEFENDER ALERT {finding}";
         if (finding.Severity == FindingSeverity.Critical)
         {
@@ -127,6 +134,8 @@ public sealed class DefenderWatchdog : IDisposable
 
     private void ClearAlert(DefenderFinding finding)
     {
+        _alerts?.Publish("DefenderWatchdog", finding.Code + "_CLEARED", AlertSeverity.Info,
+            "Defender recovered", finding.Message + " is no longer reported.");
         var line = $"Defender recovered: {finding.Message} is no longer reported.";
         _logger.LogInformation("{DefenderRecovered}", line);
         AlertLog()?.WriteLine(line);

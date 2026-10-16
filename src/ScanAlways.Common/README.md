@@ -33,6 +33,20 @@ The first tool (the always-scanning decoy) drove the initial contents:
 - **`ServiceCollectionExtensions.AddScanAlwaysDecoy`** — DI wiring that binds
   options and registers the engine.
 
+### Shared alerts and state
+
+- **`IAlertPublisher` / `AlertHub`** — bounded structured history used by
+  Canary, Defender, Persistence, and module supervision. No disk work or UI
+  callbacks run inside an alert publisher.
+- **`AlertDeliveryService`** — writes the local feed and heartbeat, restores
+  history, and tolerates delivery failures independently of monitoring.
+- **`AlertSnapshot` / `AlertNotificationCursor`** — shared feed format,
+  freshness checks, and notification deduplication for the Windows tray.
+- **`AtomicJsonFile`** — bounded JSON reads and atomic replacement for the feed
+  and persistence baseline.
+
+See [alerts and tray setup](../../docs/alerts-and-tray.md).
+
 ## Conventions
 
 - `net8.0`, nullable enabled, no Windows-only dependencies in this library so it

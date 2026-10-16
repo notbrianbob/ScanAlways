@@ -21,6 +21,7 @@
     <ProjectReference Include="..\ScanAlways.Canary\ScanAlways.Canary.csproj" />
     <ProjectReference Include="..\ScanAlways.Decoy\ScanAlways.Decoy.csproj" />
     <ProjectReference Include="..\ScanAlways.DefenderWatchdog\ScanAlways.DefenderWatchdog.csproj" />
+    <ProjectReference Include="..\ScanAlways.Persistence\ScanAlways.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>
