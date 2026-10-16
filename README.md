@@ -21,6 +21,8 @@ buy a sliver of extra protection — not a primary defense.
 | Tool | Project | What it does |
 |------|---------|--------------|
 | **Always-Scanning Decoy** | [`src/ScanAlways.Decoy`](src/ScanAlways.Decoy/) | Makes the machine look like an anti-malware scan is permanently running, as a deception layer. See its [README](src/ScanAlways.Decoy/README.md). |
+| **Canary File Watcher** | [`src/ScanAlways.Canary`](src/ScanAlways.Canary/) | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/ScanAlways.Canary/README.md). |
+| **Defender Health Watchdog** | [`src/ScanAlways.DefenderWatchdog`](src/ScanAlways.DefenderWatchdog/) | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/ScanAlways.DefenderWatchdog/README.md). |
 
 Shared, tool-agnostic code lives in [`src/ScanAlways.Common`](src/ScanAlways.Common/).
 More tools will be added as sibling projects under `src/`.
@@ -30,10 +32,14 @@ More tools will be added as sibling projects under `src/`.
 ```
 ScanAlways.sln
 ├── src/
-│   ├── ScanAlways.Common/     # Shared library (engine, config, narration)
-│   └── ScanAlways.Decoy/      # Tool 1: always-scanning decoy host
+│   ├── ScanAlways.Common/            # Shared library (engine, config, narration, rolling log)
+│   ├── ScanAlways.Decoy/             # Tool 1: always-scanning decoy host
+│   ├── ScanAlways.Canary/            # Tool 2: canary file watcher (ransomware tripwire)
+│   └── ScanAlways.DefenderWatchdog/  # Tool 3: Defender health watchdog
 └── tests/
-    └── ScanAlways.Common.Tests/
+    ├── ScanAlways.Common.Tests/
+    ├── ScanAlways.Canary.Tests/
+    └── ScanAlways.DefenderWatchdog.Tests/
 ```
 
 Each tool is its own project with its own README. Anything reusable across tools
@@ -57,7 +63,8 @@ dotnet test  -c Release
 - **User mode, no kernel drivers.** Nothing here installs a driver or needs
   tricks that only work as SYSTEM.
 - **Harmless by construction.** Tools read and observe; they do not modify,
-  quarantine, or delete files, and they never touch or impersonate Defender's
+  quarantine, or delete your files (the canary watcher only writes the decoy
+  files it creates itself), and they never touch or impersonate Defender's
   own components in a way that could break it.
 - **Honest about limits.** Every tool's README says plainly what signal it
   emulates and what it cannot do.
