@@ -26,6 +26,9 @@ strong early signal that a process is mass-modifying your documents.
    entry (which lands in the Windows Event Log when running as a service), and
    an `AlertRaised` event that a UI host can subscribe to.
 
+When hosted by the hub, critical canary alerts also go to the shared feed and
+[Windows tray companion](../../docs/alerts-and-tray.md).
+
 ## Safety
 
 - **It never touches your real files.** It only writes files it created, and

@@ -55,6 +55,10 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 | **Always-Scanning Decoy** ([`src/ScanAlways.Decoy`](src/ScanAlways.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/ScanAlways.Decoy/README.md). |
 | **Canary File Watcher** ([`src/ScanAlways.Canary`](src/ScanAlways.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/ScanAlways.Canary/README.md). |
 | **Defender Health Watchdog** ([`src/ScanAlways.DefenderWatchdog`](src/ScanAlways.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/ScanAlways.DefenderWatchdog/README.md). |
+| **Persistence & Autostart Auditor** ([`src/ScanAlways.Persistence`](src/ScanAlways.Persistence/)) | Available | Records a baseline of Run/RunOnce keys, Startup files, and visible scheduled tasks, then reports additions, changes, removals, and gaps in coverage. Read-only. See its [README](src/ScanAlways.Persistence/README.md). |
+
+The optional **Windows tray companion** shows shared alerts, recent history,
+module run states, and hub connection status. See [alerts and tray setup](docs/alerts-and-tray.md).
 
 ## How it fits together
 
@@ -65,7 +69,11 @@ ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows ser
 └── runs every enabled module side by side
     ├── Decoy             ── Modules:Decoy:Enabled
     ├── Canary            ── Modules:Canary:Enabled
-    └── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
+    ├── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
+    └── Persistence       ── Modules:Persistence:Enabled
+
+ScanAlways.Tray.exe (runs in the signed-in user's session)
+└── reads the hub's local alert feed and shows notifications/status
 ```
 
 The hub isolates modules from each other: if one fails it is logged and
@@ -112,6 +120,11 @@ resolve to the system profile instead. Either run the service under your own
 account (`obj= ".\you" password= ...`) or list your folders explicitly in
 `Decoy:ScanRoots` and `Canary:Folders`.
 
+Persistence's HKCU inventory also follows the service account. Run the hub under
+your account to monitor your current-user Run keys. The tray always runs in your
+interactive session; a LocalSystem service needs an explicit shared feed path
+with read permission for the tray user. See [service and tray setup](docs/alerts-and-tray.md#localsystem-service-with-a-user-tray).
+
 To remove it:
 
 ```powershell
@@ -136,12 +149,15 @@ overridden with an environment variable or a command-line switch, for example
   "Modules": {                      // one switch per module
     "Decoy":            { "Enabled": true },
     "Canary":           { "Enabled": true },
-    "DefenderWatchdog": { "Enabled": true }
+    "DefenderWatchdog": { "Enabled": true },
+    "Persistence":      { "Enabled": true }
   },
   // Each module's own settings live in a section named after it; see its README.
   "Decoy": { },
   "Canary": { },
-  "DefenderWatchdog": { }
+  "DefenderWatchdog": { },
+  "Persistence": { },
+  "Alerts": { "Enabled": true, "FeedPath": null, "HistoryLimit": 200 }
 }
 ```
 
@@ -166,14 +182,18 @@ ScanAlways.sln
 │   ├── ScanAlways.Hub/               # The hub executable (console app / Windows service)
 │   ├── ScanAlways.Decoy/             # Module: always-scanning decoy
 │   ├── ScanAlways.Canary/            # Module: canary file watcher (ransomware tripwire)
-│   └── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── ScanAlways.Persistence/       # Module: persistence and autostart auditor
+│   └── ScanAlways.Tray/              # Windows tray notification companion
 ├── tests/
 │   ├── ScanAlways.Common.Tests/
 │   ├── ScanAlways.Decoy.Tests/
 │   ├── ScanAlways.Canary.Tests/
-│   └── ScanAlways.DefenderWatchdog.Tests/
+│   ├── ScanAlways.DefenderWatchdog.Tests/
+│   └── ScanAlways.Persistence.Tests/
 └── docs/
-    └── adding-a-tool.md              # How to write a new module
+    ├── adding-a-tool.md              # How to write a new module
+    └── alerts-and-tray.md            # Shared alerts and tray deployment
 ```
 
 ## Design principles
@@ -195,7 +215,8 @@ ScanAlways.sln
 - [x] Hub that runs every tool as a module
 - [x] Canary (honeypot) file watcher
 - [x] Defender health watchdog
-- [ ] Persistence and autostart auditor
+- [x] Persistence and autostart auditor
+- [x] Shared alert delivery and Windows tray companion
 - [ ] Measured overhead benchmarks
 
 ## Contributing and security

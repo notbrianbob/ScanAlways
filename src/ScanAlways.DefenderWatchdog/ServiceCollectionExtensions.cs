@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ScanAlways.Common.Alerts;
 
 namespace ScanAlways.DefenderWatchdog;
 
@@ -25,7 +26,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(sp => new DefenderWatchdog(
             sp.GetRequiredService<IDefenderStatusProvider>(),
             sp.GetRequiredService<IOptions<DefenderWatchdogOptions>>(),
-            sp.GetRequiredService<ILogger<DefenderWatchdog>>()));
+            sp.GetRequiredService<ILogger<DefenderWatchdog>>(),
+            alerts: sp.GetService<IAlertPublisher>()));
         return services;
     }
 }

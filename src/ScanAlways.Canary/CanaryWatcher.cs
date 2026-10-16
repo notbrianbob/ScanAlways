@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ScanAlways.Common;
+using ScanAlways.Common.Alerts;
 
 namespace ScanAlways.Canary;
 
@@ -22,6 +23,7 @@ public sealed class CanaryWatcher : IDisposable
 {
     private readonly CanaryOptions _options;
     private readonly ILogger<CanaryWatcher> _logger;
+    private readonly IAlertPublisher? _alerts;
     private readonly CanaryDeployer _deployer;
     private readonly List<FileSystemWatcher> _watchers = new();
     private readonly HashSet<string> _tripped = new(CanaryPaths.Comparer);
@@ -30,10 +32,11 @@ public sealed class CanaryWatcher : IDisposable
     private CanaryTripwire? _tripwire;
     private ScanLogWriter? _alertLog;
 
-    public CanaryWatcher(IOptions<CanaryOptions> options, ILogger<CanaryWatcher> logger)
+    public CanaryWatcher(IOptions<CanaryOptions> options, ILogger<CanaryWatcher> logger, IAlertPublisher? alerts = null)
     {
         _options = options.Value;
         _logger = logger;
+        _alerts = alerts;
         _deployer = new CanaryDeployer(_options, logger);
     }
 
@@ -221,6 +224,8 @@ public sealed class CanaryWatcher : IDisposable
             _tripped.Add(alert.Path);
 
             var line = alert.ToString();
+            _alerts?.Publish("Canary", "CANARY_" + alert.Change.ToString().ToUpperInvariant(), AlertSeverity.Critical,
+                "Canary file changed", line, alert.Path);
             _logger.LogCritical("{CanaryAlert}", line);
             _alertLog?.WriteLine(line);
             AlertRaised?.Invoke(alert);

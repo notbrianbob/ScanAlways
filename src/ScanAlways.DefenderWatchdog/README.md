@@ -29,6 +29,10 @@ critical entry (Windows Event Log when running as a service), and raises
 `AlertCleared`. A problem that persists is not repeated every check. Every
 check also raises `Checked` with the full report, for a UI host.
 
+When hosted by the hub, findings and recovery events also go to the shared
+feed. The [Windows tray companion](../../docs/alerts-and-tray.md) displays new
+warnings/critical alerts and provides recent history.
+
 ## Read-only by design
 
 The watchdog never changes a Defender setting, never re-enables anything, and

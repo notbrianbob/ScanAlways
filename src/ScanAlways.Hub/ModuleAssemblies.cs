@@ -2,6 +2,7 @@ using System.Reflection;
 using ScanAlways.Canary;
 using ScanAlways.Decoy;
 using ScanAlways.DefenderWatchdog;
+using ScanAlways.Persistence;
 
 namespace ScanAlways.Hub;
 
@@ -16,5 +17,6 @@ internal static class ModuleAssemblies
         typeof(DecoyModule).Assembly,
         typeof(CanaryModule).Assembly,
         typeof(DefenderWatchdogModule).Assembly,
+        typeof(PersistenceModule).Assembly,
     };
 }

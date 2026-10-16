@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ScanAlways.Common.Alerts;
 
 namespace ScanAlways.Common.Modules;
 
@@ -15,17 +16,23 @@ public sealed class ModuleSupervisor : BackgroundService
     private readonly IServiceProvider _services;
     private readonly HubOptions _options;
     private readonly ILogger<ModuleSupervisor> _logger;
+    private readonly AlertHub? _alerts;
+    private readonly ModuleCatalog? _catalog;
 
     public ModuleSupervisor(
         EnabledModules modules,
         IServiceProvider services,
         IOptions<HubOptions> options,
-        ILogger<ModuleSupervisor> logger)
+        ILogger<ModuleSupervisor> logger,
+        AlertHub? alerts = null,
+        ModuleCatalog? catalog = null)
     {
         _modules = modules.Modules;
         _services = services;
         _options = options.Value;
         _logger = logger;
+        _alerts = alerts;
+        _catalog = catalog;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken) => RunAllAsync(stoppingToken);
@@ -33,6 +40,8 @@ public sealed class ModuleSupervisor : BackgroundService
     /// <summary>Runs all enabled modules until cancelled or until each one finishes.</summary>
     public async Task RunAllAsync(CancellationToken cancellationToken)
     {
+        foreach (var module in _catalog?.Modules ?? _modules)
+            _alerts?.SetModuleState(module.Id, _modules.Contains(module) ? ModuleRunState.Starting : ModuleRunState.Disabled);
         if (_modules.Count == 0)
         {
             _logger.LogWarning(
@@ -58,6 +67,7 @@ public sealed class ModuleSupervisor : BackgroundService
             try
             {
                 _logger.LogInformation("Starting module {Id} ({Name}).", module.Id, module.DisplayName);
+                _alerts?.SetModuleState(module.Id, ModuleRunState.Running);
 
                 // Task.Run so a module that blocks synchronously before its
                 // first await cannot stall the others.
@@ -66,11 +76,16 @@ public sealed class ModuleSupervisor : BackgroundService
                 if (!cancellationToken.IsCancellationRequested)
                 {
                     _logger.LogInformation("Module {Id} finished.", module.Id);
+                    _alerts?.SetModuleState(module.Id, ModuleRunState.Finished);
+                    _alerts?.Publish(module.Id, "MODULE_FINISHED", AlertSeverity.Warning,
+                        "Module is no longer running", "The module returned without a shutdown request. Check its configuration and logs.");
                 }
+                else _alerts?.SetModuleState(module.Id, ModuleRunState.Stopped);
                 return;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
+                _alerts?.SetModuleState(module.Id, ModuleRunState.Stopped);
                 return;
             }
             catch (Exception ex)
@@ -82,6 +97,9 @@ public sealed class ModuleSupervisor : BackgroundService
                     consecutiveFailures = 0;
                 }
                 consecutiveFailures++;
+                _alerts?.SetModuleState(module.Id, _options.RestartFailedModules ? ModuleRunState.Restarting : ModuleRunState.Failed);
+                _alerts?.Publish(module.Id, "MODULE_FAILED", AlertSeverity.Warning, "Module failed",
+                    ex.Message + (_options.RestartFailedModules ? " The hub will retry." : " Automatic restart is disabled."));
 
                 if (!_options.RestartFailedModules)
                 {
@@ -98,6 +116,7 @@ public sealed class ModuleSupervisor : BackgroundService
                 }
                 catch (OperationCanceledException)
                 {
+                    _alerts?.SetModuleState(module.Id, ModuleRunState.Stopped);
                     return;
                 }
             }

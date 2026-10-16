@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 using static ScanAlways.DefenderWatchdog.DefenderHealthEvaluator;
+using ScanAlways.Common.Alerts;
 
 namespace ScanAlways.DefenderWatchdog.Tests;
 
@@ -15,6 +16,22 @@ public class DefenderWatchdogTests : IDisposable
         Options.Create(new DefenderWatchdogOptions { AlertLogPath = _logPath }),
         NullLogger<DefenderWatchdog>.Instance,
         () => DefenderHealthEvaluatorTests.Now);
+
+    [Fact]
+    public async Task ProblemsAndRecovery_AreDeliveredToSharedAlerts()
+    {
+        var shared = new AlertHub(Options.Create(new AlertDeliveryOptions()));
+        using var watchdog = new DefenderWatchdog(_provider,
+            Options.Create(new DefenderWatchdogOptions { AlertLogPath = _logPath }),
+            NullLogger<DefenderWatchdog>.Instance, () => DefenderHealthEvaluatorTests.Now, shared);
+        _provider.Status = DefenderHealthEvaluatorTests.Healthy() with { RealTimeProtectionEnabled = false };
+        await watchdog.CheckOnceAsync(default);
+        await watchdog.CheckOnceAsync(default);
+        Assert.Equal(AlertSeverity.Critical, Assert.Single(shared.Snapshot().Alerts).Severity);
+        _provider.Status = DefenderHealthEvaluatorTests.Healthy();
+        await watchdog.CheckOnceAsync(default);
+        Assert.Contains(shared.Snapshot().Alerts, a => a.Code == RealTimeOff + "_CLEARED" && a.Severity == AlertSeverity.Info);
+    }
 
     [Fact]
     public async Task HealthyChecks_RaiseNoAlerts()
