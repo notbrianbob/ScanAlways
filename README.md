@@ -55,6 +55,7 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 | **Always-Scanning Decoy** ([`src/ScanAlways.Decoy`](src/ScanAlways.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/ScanAlways.Decoy/README.md). |
 | **Canary File Watcher** ([`src/ScanAlways.Canary`](src/ScanAlways.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/ScanAlways.Canary/README.md). |
 | **Defender Health Watchdog** ([`src/ScanAlways.DefenderWatchdog`](src/ScanAlways.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/ScanAlways.DefenderWatchdog/README.md). |
+| **Firewall Health Watchdog** ([`src/ScanAlways.FirewallWatchdog`](src/ScanAlways.FirewallWatchdog/)) | Available | Reports disabled Windows Firewall profiles, profiles that allow unsolicited inbound traffic by default, and every change to a profile's default inbound action. Optionally (off by default) reports newly introduced inbound allow rules. A separate layer from the Defender watchdog. Read-only. See its [README](src/ScanAlways.FirewallWatchdog/README.md). |
 | **Persistence & Autostart Auditor** ([`src/ScanAlways.Persistence`](src/ScanAlways.Persistence/)) | Available | Records a baseline of Run/RunOnce keys, Startup files, and visible scheduled tasks, then reports additions, changes, removals, and gaps in coverage. Read-only. See its [README](src/ScanAlways.Persistence/README.md). |
 
 The optional **Windows tray companion** shows shared alerts, recent history,
@@ -70,6 +71,7 @@ ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows ser
     ├── Decoy             ── Modules:Decoy:Enabled
     ├── Canary            ── Modules:Canary:Enabled
     ├── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
+    ├── FirewallWatchdog  ── Modules:FirewallWatchdog:Enabled
     └── Persistence       ── Modules:Persistence:Enabled
 
 ScanAlways.Tray.exe (runs in the signed-in user's session)
@@ -150,12 +152,14 @@ overridden with an environment variable or a command-line switch, for example
     "Decoy":            { "Enabled": true },
     "Canary":           { "Enabled": true },
     "DefenderWatchdog": { "Enabled": true },
+    "FirewallWatchdog": { "Enabled": true },
     "Persistence":      { "Enabled": true }
   },
   // Each module's own settings live in a section named after it; see its README.
   "Decoy": { },
   "Canary": { },
   "DefenderWatchdog": { },
+  "FirewallWatchdog": { },
   "Persistence": { },
   "Alerts": { "Enabled": true, "FeedPath": null, "HistoryLimit": 200 }
 }
@@ -164,7 +168,7 @@ overridden with an environment variable or a command-line switch, for example
 ## Honest limits
 
 - ScanAlways **does not detect or remove malware**. The canary watcher and
-  Defender watchdog raise alarms; they do not stop anything. If something is
+  the Defender and firewall watchdogs raise alarms; they do not stop anything. If something is
   already running on your machine, use Defender or another real scanner.
 - Deception only works on malware that checks for the signals we emulate. Many
   threats do not check, and those will not be slowed down.
@@ -183,6 +187,7 @@ ScanAlways.sln
 │   ├── ScanAlways.Decoy/             # Module: always-scanning decoy
 │   ├── ScanAlways.Canary/            # Module: canary file watcher (ransomware tripwire)
 │   ├── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── ScanAlways.FirewallWatchdog/  # Module: Windows Firewall health watchdog
 │   ├── ScanAlways.Persistence/       # Module: persistence and autostart auditor
 │   └── ScanAlways.Tray/              # Windows tray notification companion
 ├── tests/
@@ -190,6 +195,7 @@ ScanAlways.sln
 │   ├── ScanAlways.Decoy.Tests/
 │   ├── ScanAlways.Canary.Tests/
 │   ├── ScanAlways.DefenderWatchdog.Tests/
+│   ├── ScanAlways.FirewallWatchdog.Tests/
 │   └── ScanAlways.Persistence.Tests/
 └── docs/
     ├── adding-a-tool.md              # How to write a new module
@@ -215,6 +221,8 @@ ScanAlways.sln
 - [x] Hub that runs every tool as a module
 - [x] Canary (honeypot) file watcher
 - [x] Defender health watchdog
+- [x] Firewall health watchdog (profiles and inbound default policy)
+- [x] Opt-in monitoring of new inbound firewall allow rules
 - [x] Persistence and autostart auditor
 - [x] Shared alert delivery and Windows tray companion
 - [ ] Measured overhead benchmarks

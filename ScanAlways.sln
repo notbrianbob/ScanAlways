@@ -31,6 +31,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Tray", "src\Scan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.Persistence.Tests", "tests\ScanAlways.Persistence.Tests\ScanAlways.Persistence.Tests.csproj", "{D61D4E71-5483-4175-BA92-3AAC465EAA02}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.FirewallWatchdog", "src\ScanAlways.FirewallWatchdog\ScanAlways.FirewallWatchdog.csproj", "{E0797D34-97C1-4977-928B-C2AB57E8D7B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanAlways.FirewallWatchdog.Tests", "tests\ScanAlways.FirewallWatchdog.Tests\ScanAlways.FirewallWatchdog.Tests.csproj", "{06A97F36-77DB-4333-A096-469A09425E81}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +92,14 @@ Global
 		{D61D4E71-5483-4175-BA92-3AAC465EAA02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D61D4E71-5483-4175-BA92-3AAC465EAA02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D61D4E71-5483-4175-BA92-3AAC465EAA02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0797D34-97C1-4977-928B-C2AB57E8D7B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0797D34-97C1-4977-928B-C2AB57E8D7B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0797D34-97C1-4977-928B-C2AB57E8D7B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0797D34-97C1-4977-928B-C2AB57E8D7B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06A97F36-77DB-4333-A096-469A09425E81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06A97F36-77DB-4333-A096-469A09425E81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06A97F36-77DB-4333-A096-469A09425E81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06A97F36-77DB-4333-A096-469A09425E81}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{35BE1A69-3A68-4758-B875-0DBEFA5ECF29} = {58108381-0033-46B2-9AC9-0D7DC1BF8836}
@@ -102,5 +114,7 @@ Global
 		{B04AA65D-B33E-4F8C-AEE5-8F6B95335DAD} = {58108381-0033-46B2-9AC9-0D7DC1BF8836}
 		{B9C13DF2-51C5-49BA-9C0C-83F83F784EAB} = {58108381-0033-46B2-9AC9-0D7DC1BF8836}
 		{D61D4E71-5483-4175-BA92-3AAC465EAA02} = {AFF5D81C-4459-4B9A-B35C-C87B27194823}
+		{E0797D34-97C1-4977-928B-C2AB57E8D7B4} = {58108381-0033-46B2-9AC9-0D7DC1BF8836}
+		{06A97F36-77DB-4333-A096-469A09425E81} = {AFF5D81C-4459-4B9A-B35C-C87B27194823}
 	EndGlobalSection
 EndGlobal
