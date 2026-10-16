@@ -24,6 +24,7 @@ public static class HubServiceCollectionExtensions
         services.AddOptions<AlertDeliveryOptions>().Bind(configuration.GetSection("Alerts"));
         services.AddSingleton<AlertHub>();
         services.AddSingleton<IAlertPublisher>(sp => sp.GetRequiredService<AlertHub>());
+        services.AddSingleton<IUpdateStatusPublisher>(sp => sp.GetRequiredService<AlertHub>());
         services.AddHostedService<AlertDeliveryService>();
         foreach (var module in enabled)
         {

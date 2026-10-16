@@ -23,6 +23,7 @@
     <ProjectReference Include="..\ScanAlways.DefenderWatchdog\ScanAlways.DefenderWatchdog.csproj" />
     <ProjectReference Include="..\ScanAlways.FirewallWatchdog\ScanAlways.FirewallWatchdog.csproj" />
     <ProjectReference Include="..\ScanAlways.Persistence\ScanAlways.Persistence.csproj" />
+    <ProjectReference Include="..\ScanAlways.Updater\ScanAlways.Updater.csproj" />
   </ItemGroup>
 
   <ItemGroup>

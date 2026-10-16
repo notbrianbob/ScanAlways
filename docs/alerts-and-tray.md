@@ -61,6 +61,9 @@ Run only one hub writer per feed and baseline path. Multiple companions can
 read the feed, but each Windows session permits one tray instance per path.
 There is no network listener and no tray-to-service control channel. The tray
 renders alert text only; it does not execute paths or commands found in alerts.
+The two things it can open are an update's release page, only when it is an
+https link on github.com, and the hub's own updater (see below), which it
+finds next to its own folder rather than in the feed.
 
 ## LocalSystem service with a user tray
 
@@ -92,6 +95,20 @@ the persistence baseline private to the hub's account; the tray does not need
 to read it. For a different service account, grant that account modify access
 to this dedicated feed directory instead. The source directories remain
 read-only to the auditor; it only writes its own baseline and shared feed.
+
+## Updates
+
+When the hub's update checker finds a newer release, the tray shows one
+notification for that version, an **Update available** entry in its menu, and a
+banner at the top of the alerts window with **Install update** and **Release
+notes**. Nothing is downloaded until you choose Install update. The tray then
+asks for confirmation and starts `..\Hub\ScanAlways.Protection.Service.exe
+--apply-update` through Windows' administrator prompt. The updater re-checks
+GitHub itself, verifies the SHA-256 checksum, stops and restarts the service,
+and the tray restarts on the new version. Declining the prompt changes nothing.
+If the tray is not installed next to the hub, the banner still appears and
+explains how to run the update from the hub's folder. See the
+[updater README](../src/ScanAlways.Updater/README.md) for every step and its limits.
 
 ## Delivery behavior and limitations
 

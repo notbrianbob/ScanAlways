@@ -4,6 +4,7 @@ using ScanAlways.Decoy;
 using ScanAlways.DefenderWatchdog;
 using ScanAlways.FirewallWatchdog;
 using ScanAlways.Persistence;
+using ScanAlways.Updater;
 
 namespace ScanAlways.Hub;
 
@@ -20,5 +21,6 @@ internal static class ModuleAssemblies
         typeof(DefenderWatchdogModule).Assembly,
         typeof(FirewallWatchdogModule).Assembly,
         typeof(PersistenceModule).Assembly,
+        typeof(UpdaterModule).Assembly,
     };
 }

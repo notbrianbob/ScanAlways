@@ -1,0 +1,83 @@
+name: Release
+
+# Pushing a tag like v0.2.0 builds, tests and publishes a GitHub Release with:
+#   WatchLattice-<version>-win-x64.zip   Hub/ and Tray/, framework-dependent
+#   SHA256SUMS.txt                       checked by the in-hub updater before installing
+# plus a build provenance attestation for the zip (verify with `gh attestation verify`).
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: windows-latest
+    permissions:
+      contents: write      # create the release
+      id-token: write      # sign the provenance attestation
+      attestations: write
+
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      TAG: ${{ github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          if ($env:TAG -notmatch '^v((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?)$') {
+            throw "Tag '$env:TAG' is not a release version like v1.2.3 or v1.2.3-beta.1."
+          }
+          $version = $Matches[1]
+          if ($version -match '(^|[.-])dev([.-]|$)') { throw "Release versions must not contain 'dev'; the updater treats those as development builds." }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Publish hub and tray
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'package'
+          dotnet publish src/ScanAlways.Hub  -c Release -r win-x64 --self-contained false -p:Version=$env:VERSION -o (Join-Path $stage 'Hub')
+          dotnet publish src/ScanAlways.Tray -c Release -r win-x64 --self-contained false -p:Version=$env:VERSION -o (Join-Path $stage 'Tray')
+          Copy-Item LICENSE, README.md $stage
+          Get-ChildItem $stage -Recurse -Filter *.pdb | Remove-Item
+
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $zip = "dist/WatchLattice-$env:VERSION-win-x64.zip"
+          # .NET's ZipFile writes forward-slash entry names, which the updater expects.
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, (Join-Path (Resolve-Path dist).Path (Split-Path $zip -Leaf)))
+
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Encoding ascii -Path dist/SHA256SUMS.txt -Value "$hash  $(Split-Path $zip -Leaf)"
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: dist/WatchLattice-*.zip
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $flags = @('--verify-tag', '--generate-notes', '--title', "WatchLattice $env:VERSION")
+          if ($env:VERSION.Contains('-')) { $flags += '--prerelease' }
+          gh release create $env:TAG dist/WatchLattice-$env:VERSION-win-x64.zip dist/SHA256SUMS.txt @flags

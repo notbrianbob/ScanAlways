@@ -11,7 +11,8 @@ public sealed record ModuleStatus(string Id, ModuleRunState State, DateTimeOffse
 
 /// <summary>Versioned, bounded snapshot consumed by the tray without a control channel.</summary>
 public sealed record AlertSnapshot(int Version, Guid SessionId, DateTimeOffset HeartbeatAt,
-    bool Online, IReadOnlyList<ModuleStatus> Modules, IReadOnlyList<ProtectionAlert> Alerts, long Revision = 0)
+    bool Online, IReadOnlyList<ModuleStatus> Modules, IReadOnlyList<ProtectionAlert> Alerts, long Revision = 0,
+    UpdateNotice? Update = null)
 {
     public const int CurrentVersion = 1;
 
@@ -28,6 +29,8 @@ public sealed record AlertSnapshot(int Version, Guid SessionId, DateTimeOffset H
             || snapshot.Alerts.Any(a => a is null || a.Id == Guid.Empty || a.Module is null
                 || a.Code is null || a.Title is null || a.Message is null || !Enum.IsDefined(a.Severity)))
             throw new InvalidDataException("Unsupported or invalid alert feed.");
+        if (snapshot.Update is { } update && !update.IsWellFormed())
+            snapshot = snapshot with { Update = null };
         if (includeHeartbeat)
         {
             try
@@ -40,6 +43,37 @@ public sealed record AlertSnapshot(int Version, Guid SessionId, DateTimeOffset H
         }
         return snapshot;
     }
+}
+
+/// <summary>
+/// A newer release the hub's update checker found. Display-only: the tray never
+/// downloads or runs anything named here. Installing re-checks the release
+/// source from the hub's own install directory.
+/// </summary>
+public sealed record UpdateNotice(string CurrentVersion, string LatestVersion, string ReleaseName, string ReleaseUrl,
+    DateTimeOffset? PublishedAt, DateTimeOffset CheckedAt, bool Installable, string? Problem = null)
+{
+    public bool IsWellFormed() => IsShortText(CurrentVersion, 64) && IsShortText(LatestVersion, 64)
+        && IsShortText(ReleaseName, 200) && IsShortText(ReleaseUrl, 512) && (Problem is null || Problem.Length <= 512);
+
+    /// <summary>The release page, only when it is an https link on github.com.</summary>
+    public bool TryGetReleasePage(out Uri page)
+    {
+        page = null!;
+        if (!Uri.TryCreate(ReleaseUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
+            || !string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase) || !uri.IsDefaultPort
+            || !string.IsNullOrEmpty(uri.UserInfo)) return false;
+        page = uri;
+        return true;
+    }
+
+    private static bool IsShortText(string? value, int max) => !string.IsNullOrWhiteSpace(value) && value.Length <= max;
+}
+
+/// <summary>Lets the update checker show its result next to the alert history.</summary>
+public interface IUpdateStatusPublisher
+{
+    void SetUpdate(UpdateNotice? notice);
 }
 
 /// <summary>A small sidecar refreshed while an unchanged alert snapshot remains on disk.</summary>

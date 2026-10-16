@@ -10,5 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../ScanAlways.Common/ScanAlways.Common.csproj" />
+    <ProjectReference Include="../ScanAlways.Updater/ScanAlways.Updater.csproj" />
   </ItemGroup>
 </Project>

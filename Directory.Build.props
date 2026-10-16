@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- The release workflow passes -p:Version=<tag>. Anything else is a
+         development build, which the update checker leaves alone. -->
+    <Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
+  </PropertyGroup>
+</Project>
