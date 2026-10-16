@@ -63,12 +63,12 @@ public sealed class CanaryOptions
     /// </summary>
     public bool RemoveCanariesOnStop { get; set; }
 
-    /// <summary>Rolling alert log. Null picks %LOCALAPPDATA%\WatchLattice\canary-alerts.log.</summary>
+    /// <summary>Rolling alert log. Null picks %LOCALAPPDATA%\ScanAlways\canary-alerts.log.</summary>
     public string? AlertLogPath { get; set; }
 
     /// <summary>
     /// Where the watcher records which files it planted and their hashes.
-    /// Null picks %LOCALAPPDATA%\WatchLattice\canary-manifest.json.
+    /// Null picks %LOCALAPPDATA%\ScanAlways\canary-manifest.json.
     /// </summary>
     public string? ManifestPath { get; set; }
 
@@ -132,7 +132,7 @@ public sealed class CanaryOptions
         {
             root = Path.GetTempPath();
         }
-        return Path.Combine(root, "WatchLattice", fileName);
+        return Path.Combine(root, "ScanAlways", fileName);
     }
 }
 

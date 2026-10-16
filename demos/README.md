@@ -54,9 +54,9 @@ attaches the results to the run.
 5. Copies the first lines of the scanner-style log it wrote.
 
 `Show-DecoySignals.ps1` complements this on Windows: it publishes and starts
-the actual hub (`WatchLattice.Protection.Service.exe`) with only the decoy
+the actual hub (`ScanAlways.Protection.Service.exe`) with only the decoy
 enabled, shows the resident process, reports whether the
-`WatchLattice Protection` service is installed, and measures that process from
+`ScanAlways Protection` service is installed, and measures that process from
 outside with `Get-Process` and `Win32_Process`.
 
 ### Canary file watcher

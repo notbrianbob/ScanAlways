@@ -21,7 +21,7 @@ public sealed class DefenderWatchdogOptions
     /// </summary>
     public bool TamperProtectionOffIsCritical { get; set; }
 
-    /// <summary>Rolling alert log. Null picks %LOCALAPPDATA%\WatchLattice\defender-watchdog.log.</summary>
+    /// <summary>Rolling alert log. Null picks %LOCALAPPDATA%\ScanAlways\defender-watchdog.log.</summary>
     public string? AlertLogPath { get; set; }
 
     public string ResolveAlertLogPath()
@@ -36,6 +36,6 @@ public sealed class DefenderWatchdogOptions
         {
             root = Path.GetTempPath();
         }
-        return Path.Combine(root, "WatchLattice", "defender-watchdog.log");
+        return Path.Combine(root, "ScanAlways", "defender-watchdog.log");
     }
 }

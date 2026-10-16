@@ -23,11 +23,15 @@ standard user, no admin needed) and evaluates:
 ## How it alerts
 
 Only on **change**: when a problem first appears it writes a `DEFENDER ALERT`
-line to `%LOCALAPPDATA%\WatchLattice\defender-watchdog.log`, logs a warning or
+line to `%LOCALAPPDATA%\ScanAlways\defender-watchdog.log`, logs a warning or
 critical entry (Windows Event Log when running as a service), and raises
 `AlertRaised`. When the problem clears it logs a "recovered" line and raises
 `AlertCleared`. A problem that persists is not repeated every check. Every
 check also raises `Checked` with the full report, for a UI host.
+
+When hosted by the hub, findings and recovery events also go to the shared
+feed. The [Windows tray companion](../../docs/alerts-and-tray.md) displays new
+warnings/critical alerts and provides recent history.
 
 ## Read-only by design
 
@@ -46,7 +50,7 @@ answer for Defender.
 | `MaxSignatureAgeHours` | `48` | Signatures older than this are a warning. |
 | `CriticalSignatureAgeHours` | `168` | Signatures older than this are critical. |
 | `TamperProtectionOffIsCritical` | `false` | Escalate tamper protection off to critical. Off by default because some managed (Intune/GPO) machines disable it on purpose. |
-| `AlertLogPath` | `%LOCALAPPDATA%\WatchLattice\defender-watchdog.log` | Rolling alert log. |
+| `AlertLogPath` | `%LOCALAPPDATA%\ScanAlways\defender-watchdog.log` | Rolling alert log. |
 
 ## Run
 

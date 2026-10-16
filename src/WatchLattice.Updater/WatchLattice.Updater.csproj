@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>WatchLattice.Updater</RootNamespace>
+    <AssemblyName>WatchLattice.Updater</AssemblyName>
+    <Description>Update checker and verified installer for the WatchLattice suite. Checks run as a module inside the WatchLattice hub; installs run only on request.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WatchLattice.Common\WatchLattice.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="WatchLattice.Updater.Tests" />
+  </ItemGroup>
+
+</Project>

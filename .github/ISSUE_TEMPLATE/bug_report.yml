@@ -10,7 +10,7 @@ body:
     id: module
     attributes:
       label: Affected module
-      description: Which tool/module, or "hub" if it is the host itself. `WatchLattice.Protection.Service --list-modules` shows them.
+      description: Which tool/module, or "hub" if it is the host itself. `ScanAlways.Protection.Service --list-modules` shows them.
       placeholder: e.g. Decoy
     validations:
       required: true

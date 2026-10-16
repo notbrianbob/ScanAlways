@@ -1,7 +1,7 @@
 # Adding a new tool to the suite
 
 Every WatchLattice tool is a **module** that runs inside the hub
-(`WatchLattice.Protection.Service`). The hub owns the process, logging,
+(`ScanAlways.Protection.Service`). The hub owns the process, logging,
 configuration, and Windows-service plumbing; a module only has to describe
 itself, register its services, and run until it is told to stop.
 
@@ -66,6 +66,9 @@ Modules are discovered at compile time; nothing is loaded from disk at runtime.
        typeof(DecoyModule).Assembly,
        typeof(CanaryModule).Assembly,
        typeof(DefenderWatchdogModule).Assembly,
+       typeof(FirewallWatchdogModule).Assembly,
+       typeof(PersistenceModule).Assembly,
+       typeof(UpdaterModule).Assembly,
        typeof(YourModule).Assembly,
    };
    ```
@@ -83,6 +86,17 @@ Modules are discovered at compile time; nothing is loaded from disk at runtime.
 Check it with `dotnet run --project src/WatchLattice.Hub -- --list-modules`.
 
 ## 4. Test it
+
+For user-visible findings, accept an optional
+`WatchLattice.Common.Alerts.IAlertPublisher` in the engine constructor and call
+`Publish` with the module ID, stable finding code, severity, title, detail, and
+optional resource identity. The hub registers the shared publisher before
+configuring modules. Keep existing logs, publish only meaningful changes, and
+use informational alerts for recovery. Do not send routine scan narration to
+the alert feed. A module can still run independently without a publisher.
+
+The [tray companion](alerts-and-tray.md) consumes these alerts automatically;
+modules do not need to know about Windows Forms or notification APIs.
 
 Create `tests/WatchLattice.<Tool>.Tests` (copy `tests/WatchLattice.Decoy.Tests` or `tests/WatchLattice.Canary.Tests`)
 and add it with `dotnet sln add ... --solution-folder tests`. At minimum:

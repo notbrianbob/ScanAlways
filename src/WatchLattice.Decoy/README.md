@@ -11,7 +11,7 @@ the entire idea.
 
 It runs as a module inside the [WatchLattice hub](../WatchLattice.Hub/), the
 background **Windows service** (or plain console process, for testing) named
-**WatchLattice Protection**, alongside Microsoft Defender. It is enabled by
+**ScanAlways Protection**, alongside Microsoft Defender. It is enabled by
 default; turn it off with `Modules:Decoy:Enabled = false`.
 
 ## What it actually does
@@ -30,8 +30,8 @@ cap, and a max file size) so CPU and disk overhead stay modest.
 ## Signals it emulates
 
 - **A scanner-named process always resident.** The hub binary is
-  `WatchLattice.Protection.Service.exe`, and it registers as the
-  *WatchLattice Protection* Windows service — a plausible always-on security
+  `ScanAlways.Protection.Service.exe`, and it registers as the
+  *ScanAlways Protection* Windows service — a plausible always-on security
   service in the process/service list.
 - **Steady scanner-style file-read I/O.** Continuous read + hash activity across
   user-profile locations, the way real-time protection or an on-demand scan
@@ -80,7 +80,7 @@ command-line switches):
 | `BytesReadPerFile` | `65536` | Bytes read from the front of each file. |
 | `MaxFileSizeBytes` | `268435456` | Files larger than this are named but not read. |
 | `WriteScanLog` | `true` | Write the cosmetic rolling scan log. |
-| `ScanLogPath` | `null` | Log location; `null` = `%TEMP%\WatchLattice\scan-activity.log`. |
+| `ScanLogPath` | `null` | Log location; `null` = `%TEMP%\ScanAlways\scan-activity.log`. |
 
 ## Run it
 

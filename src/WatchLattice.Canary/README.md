@@ -22,9 +22,12 @@ strong early signal that a process is mass-modifying your documents.
    watcher missed (event-buffer overflow, network folders) and canaries that
    were tampered with while the watcher wasn't running.
 4. **Alerts.** A tripped canary produces a `CANARY TRIPPED` line in a rolling
-   alert log (`%LOCALAPPDATA%\WatchLattice\canary-alerts.log`), a critical log
+   alert log (`%LOCALAPPDATA%\ScanAlways\canary-alerts.log`), a critical log
    entry (which lands in the Windows Event Log when running as a service), and
    an `AlertRaised` event that a UI host can subscribe to.
+
+When hosted by the hub, critical canary alerts also go to the shared feed and
+[Windows tray companion](../../docs/alerts-and-tray.md).
 
 ## Safety
 
@@ -48,8 +51,8 @@ strong early signal that a process is mass-modifying your documents.
 | `IntegrityCheckSeconds` | `60` | How often every canary is re-hashed (minimum 10). |
 | `AlertDebounceSeconds` | `5` | Suppress duplicate alerts for the same canary and change. |
 | `RemoveCanariesOnStop` | `false` | Delete intact canaries on shutdown. |
-| `AlertLogPath` | `%LOCALAPPDATA%\WatchLattice\canary-alerts.log` | Rolling alert log. |
-| `ManifestPath` | `%LOCALAPPDATA%\WatchLattice\canary-manifest.json` | Which files were planted, and their hashes. |
+| `AlertLogPath` | `%LOCALAPPDATA%\ScanAlways\canary-alerts.log` | Rolling alert log. |
+| `ManifestPath` | `%LOCALAPPDATA%\ScanAlways\canary-manifest.json` | Which files were planted, and their hashes. |
 
 ## Run
 

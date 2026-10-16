@@ -6,8 +6,11 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <RootNamespace>WatchLattice.Hub</RootNamespace>
-    <!-- A plausible, scanner-like process name for the resident hub (the decoy relies on it). -->
-    <AssemblyName>WatchLattice.Protection.Service</AssemblyName>
+    <!-- A plausible, scanner-like process name for the resident hub (the decoy relies on it).
+         Kept from the ScanAlways name: installed v0.1.0 updaters require
+         Hub/ScanAlways.Protection.Service.exe in every release package, and
+         existing services point at this file. See docs/releasing.md. -->
+    <AssemblyName>ScanAlways.Protection.Service</AssemblyName>
     <Description>The WatchLattice hub: one process that runs every enabled tool as a module. Runs as a console app or Windows service.</Description>
   </PropertyGroup>
 
@@ -21,6 +24,9 @@
     <ProjectReference Include="..\WatchLattice.Canary\WatchLattice.Canary.csproj" />
     <ProjectReference Include="..\WatchLattice.Decoy\WatchLattice.Decoy.csproj" />
     <ProjectReference Include="..\WatchLattice.DefenderWatchdog\WatchLattice.DefenderWatchdog.csproj" />
+    <ProjectReference Include="..\WatchLattice.FirewallWatchdog\WatchLattice.FirewallWatchdog.csproj" />
+    <ProjectReference Include="..\WatchLattice.Persistence\WatchLattice.Persistence.csproj" />
+    <ProjectReference Include="..\WatchLattice.Updater\WatchLattice.Updater.csproj" />
   </ItemGroup>
 
   <ItemGroup>

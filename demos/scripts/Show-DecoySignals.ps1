@@ -9,7 +9,7 @@
     module enabled, sweeping a seeded synthetic corpus, and then:
 
       1. shows the resident process as any process list sees it,
-      2. reports whether the "WatchLattice Protection" service is installed,
+      2. reports whether the "ScanAlways Protection" service is installed,
       3. samples the process once per interval with Get-Process (CPU time,
          working set) and Win32_Process (ReadTransferCount, ReadOperationCount),
       4. prints the tail of the scanner-style log.
@@ -52,10 +52,13 @@ Write-Host "Creating the synthetic corpus ($Files files, seed $Seed)"
 dotnet run -c Release --project (Join-Path $repo 'demos/WatchLattice.Demos') -- corpus --corpus $corpus --files $Files --seed $Seed --out $OutDir --work $WorkDir
 if ($LASTEXITCODE -ne 0) { throw 'corpus creation failed' }
 
-$exe = Join-Path $publishDir 'WatchLattice.Protection.Service.exe'
+$exe = Join-Path $publishDir 'ScanAlways.Protection.Service.exe'
 $hubArgs = @(
     '--Modules:Canary:Enabled=false',
     '--Modules:DefenderWatchdog:Enabled=false',
+    '--Modules:FirewallWatchdog:Enabled=false',
+    '--Modules:Persistence:Enabled=false',
+    '--Modules:Updater:Enabled=false',
     "--Decoy:Intensity=$Intensity",
     "--Decoy:ScanRoots:0=$corpus",
     "--Decoy:ScanLogPath=$scanLog"
@@ -80,11 +83,11 @@ try {
 
     $md.Add('### 2. Windows service')
     $md.Add('')
-    $svc = Get-Service -Name 'WatchLattice Protection' -ErrorAction SilentlyContinue
+    $svc = Get-Service -Name 'ScanAlways Protection' -ErrorAction SilentlyContinue
     if ($svc) {
-        $md.Add("``WatchLattice Protection`` is installed: status $($svc.Status), start type $($svc.StartType).")
+        $md.Add("``ScanAlways Protection`` is installed: status $($svc.Status), start type $($svc.StartType).")
     } else {
-        $md.Add('``WatchLattice Protection`` is not installed on this machine; this run used console mode. Installing it (see the top-level README) adds the service entry to the same process.')
+        $md.Add('``ScanAlways Protection`` is not installed on this machine; this run used console mode. Installing it (see the top-level README) adds the service entry to the same process.')
     }
     $md.Add('')
 

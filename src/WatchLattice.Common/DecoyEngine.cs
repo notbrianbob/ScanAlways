@@ -145,7 +145,7 @@ public sealed class DecoyEngine
         {
             return Environment.ExpandEnvironmentVariables(_options.ScanLogPath);
         }
-        return Path.Combine(Path.GetTempPath(), "WatchLattice", "scan-activity.log");
+        return Path.Combine(Path.GetTempPath(), "ScanAlways", "scan-activity.log");
     }
 
     private void Emit(ScanLogWriter? log, string message, bool toLogger = true)

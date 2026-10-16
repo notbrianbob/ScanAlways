@@ -45,7 +45,7 @@ public class CanaryOptionsTests
     {
         var options = new CanaryOptions();
 
-        Assert.EndsWith(Path.Combine("WatchLattice", "canary-alerts.log"), options.ResolveAlertLogPath());
-        Assert.EndsWith(Path.Combine("WatchLattice", "canary-manifest.json"), options.ResolveManifestPath());
+        Assert.EndsWith(Path.Combine("ScanAlways", "canary-alerts.log"), options.ResolveAlertLogPath());
+        Assert.EndsWith(Path.Combine("ScanAlways", "canary-manifest.json"), options.ResolveManifestPath());
     }
 }

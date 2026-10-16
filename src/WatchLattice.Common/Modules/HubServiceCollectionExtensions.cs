@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WatchLattice.Common.Alerts;
 
 namespace WatchLattice.Common.Modules;
 
@@ -20,6 +21,11 @@ public static class HubServiceCollectionExtensions
             .Bind(configuration.GetSection(HubOptions.SectionName));
 
         var enabled = catalog.ResolveEnabled(configuration);
+        services.AddOptions<AlertDeliveryOptions>().Bind(configuration.GetSection("Alerts"));
+        services.AddSingleton<AlertHub>();
+        services.AddSingleton<IAlertPublisher>(sp => sp.GetRequiredService<AlertHub>());
+        services.AddSingleton<IUpdateStatusPublisher>(sp => sp.GetRequiredService<AlertHub>());
+        services.AddHostedService<AlertDeliveryService>();
         foreach (var module in enabled)
         {
             module.ConfigureServices(services, configuration);

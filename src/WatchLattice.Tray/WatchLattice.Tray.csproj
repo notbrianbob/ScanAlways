@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- Kept from the ScanAlways name: installed v0.1.0 updaters require
+         Tray/ScanAlways.Tray.exe in every release package. See docs/releasing.md. -->
+    <AssemblyName>ScanAlways.Tray</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../WatchLattice.Common/WatchLattice.Common.csproj" />
+    <ProjectReference Include="../WatchLattice.Updater/WatchLattice.Updater.csproj" />
+  </ItemGroup>
+</Project>

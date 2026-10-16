@@ -62,17 +62,35 @@ detection and removal, and WatchLattice adds friction and tripwires around it.
 | **Always-Scanning Decoy** ([`src/WatchLattice.Decoy`](src/WatchLattice.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/WatchLattice.Decoy/README.md). |
 | **Canary File Watcher** ([`src/WatchLattice.Canary`](src/WatchLattice.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/WatchLattice.Canary/README.md). |
 | **Defender Health Watchdog** ([`src/WatchLattice.DefenderWatchdog`](src/WatchLattice.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Read-only. See its [README](src/WatchLattice.DefenderWatchdog/README.md). |
+| **Firewall Health Watchdog** ([`src/WatchLattice.FirewallWatchdog`](src/WatchLattice.FirewallWatchdog/)) | Available | Reports disabled Windows Firewall profiles, profiles that allow unsolicited inbound traffic by default, and every change to a profile's default inbound action. Optionally (off by default) reports newly introduced inbound allow rules. A separate layer from the Defender watchdog. Read-only. See its [README](src/WatchLattice.FirewallWatchdog/README.md). |
+| **Persistence & Autostart Auditor** ([`src/WatchLattice.Persistence`](src/WatchLattice.Persistence/)) | Available | Records a baseline of Run/RunOnce keys, Startup files, and visible scheduled tasks, then reports additions, changes, removals, and gaps in coverage. Read-only. See its [README](src/WatchLattice.Persistence/README.md). |
+
+The optional **Windows tray companion** shows shared alerts, recent history,
+module run states, and hub connection status. See [alerts and tray setup](docs/alerts-and-tray.md).
+
+The **Update Checker** ([`src/WatchLattice.Updater`](src/WatchLattice.Updater/)) runs
+in the hub too. It checks this repository's GitHub Releases, tells you in the
+tray when a newer version is out, and installs it only when you choose
+**Install update**, after verifying the download's SHA-256 checksum. See its
+[README](src/WatchLattice.Updater/README.md) and [cutting a release](docs/releasing.md).
 
 ## How it fits together
 
 ```
-WatchLattice.Protection.Service.exe  (the hub: one process, console or Windows service)
+ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows service)
 ├── reads appsettings.json
 ├── discovers the modules it was built with
 └── runs every enabled module side by side
     ├── Decoy             ── Modules:Decoy:Enabled
     ├── Canary            ── Modules:Canary:Enabled
-    └── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
+    ├── DefenderWatchdog  ── Modules:DefenderWatchdog:Enabled
+    ├── FirewallWatchdog  ── Modules:FirewallWatchdog:Enabled
+    ├── Persistence       ── Modules:Persistence:Enabled
+    └── Updater           ── Modules:Updater:Enabled (checks only)
+
+ScanAlways.Tray.exe (runs in the signed-in user's session)
+├── reads the hub's local alert feed and shows notifications/status
+└── Install update: starts the hub's --apply-update, elevated, on request
 ```
 
 The hub isolates modules from each other: if one fails it is logged and
@@ -82,9 +100,9 @@ way to drop a DLL next to the service and have it executed.
 
 ## Demos and measured results
 
-[`demos/`](demos/) holds reproducible demonstrations of what each module
-actually does, with measured overhead and the method used to measure it:
-the decoy's CPU, read I/O and memory at each intensity, a canary being tripped
+[`demos/`](demos/) holds reproducible demonstrations of what the modules
+actually do, with measured overhead and the method used to measure it: the
+decoy's CPU, read I/O and memory at each intensity, a canary being tripped
 (with a control file that must not trip it), and the Defender watchdog's
 readout for healthy and degraded states. They show signals and costs, not
 protection against real malware, which these demos do not test. Latest
@@ -119,8 +137,8 @@ From an elevated PowerShell:
 
 ```powershell
 dotnet publish src/WatchLattice.Hub -c Release -r win-x64 --self-contained false -o C:\WatchLattice
-sc.exe create "WatchLattice Protection" binPath= "C:\WatchLattice\WatchLattice.Protection.Service.exe" start= auto
-sc.exe start "WatchLattice Protection"
+sc.exe create "ScanAlways Protection" binPath= "C:\WatchLattice\ScanAlways.Protection.Service.exe" start= auto
+sc.exe start "ScanAlways Protection"
 ```
 
 A service runs as LocalSystem by default, so folders that default to "your"
@@ -129,11 +147,16 @@ resolve to the system profile instead. Either run the service under your own
 account (`obj= ".\you" password= ...`) or list your folders explicitly in
 `Decoy:ScanRoots` and `Canary:Folders`.
 
+Persistence's HKCU inventory also follows the service account. Run the hub under
+your account to monitor your current-user Run keys. The tray always runs in your
+interactive session; a LocalSystem service needs an explicit shared feed path
+with read permission for the tray user. See [service and tray setup](docs/alerts-and-tray.md#localsystem-service-with-a-user-tray).
+
 To remove it:
 
 ```powershell
-sc.exe stop "WatchLattice Protection"
-sc.exe delete "WatchLattice Protection"
+sc.exe stop "ScanAlways Protection"
+sc.exe delete "ScanAlways Protection"
 ```
 
 ## Configuration
@@ -153,19 +176,26 @@ overridden with an environment variable or a command-line switch, for example
   "Modules": {                      // one switch per module
     "Decoy":            { "Enabled": true },
     "Canary":           { "Enabled": true },
-    "DefenderWatchdog": { "Enabled": true }
+    "DefenderWatchdog": { "Enabled": true },
+    "FirewallWatchdog": { "Enabled": true },
+    "Persistence":      { "Enabled": true },
+    "Updater":          { "Enabled": true }
   },
   // Each module's own settings live in a section named after it; see its README.
   "Decoy": { },
   "Canary": { },
-  "DefenderWatchdog": { }
+  "DefenderWatchdog": { },
+  "FirewallWatchdog": { },
+  "Persistence": { },
+  "Updater": { },
+  "Alerts": { "Enabled": true, "FeedPath": null, "HistoryLimit": 200 }
 }
 ```
 
 ## Honest limits
 
 - WatchLattice **does not detect or remove malware**. The canary watcher and
-  Defender watchdog raise alarms; they do not stop anything. If something is
+  the Defender and firewall watchdogs raise alarms; they do not stop anything. If something is
   already running on your machine, use Defender or another real scanner.
 - Deception only works on malware that checks for the signals we emulate. Many
   threats do not check, and those will not be slowed down.
@@ -183,28 +213,35 @@ WatchLattice.sln
 │   ├── WatchLattice.Hub/               # The hub executable (console app / Windows service)
 │   ├── WatchLattice.Decoy/             # Module: always-scanning decoy
 │   ├── WatchLattice.Canary/            # Module: canary file watcher (ransomware tripwire)
-│   └── WatchLattice.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── WatchLattice.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── WatchLattice.FirewallWatchdog/  # Module: Windows Firewall health watchdog
+│   ├── WatchLattice.Persistence/       # Module: persistence and autostart auditor
+│   ├── WatchLattice.Updater/           # Module + installer: update checks and verified installs
+│   └── WatchLattice.Tray/              # Windows tray notification companion
 ├── tests/
 │   ├── WatchLattice.Common.Tests/
 │   ├── WatchLattice.Decoy.Tests/
 │   ├── WatchLattice.Canary.Tests/
-│   └── WatchLattice.DefenderWatchdog.Tests/
+│   ├── WatchLattice.DefenderWatchdog.Tests/
+│   ├── WatchLattice.FirewallWatchdog.Tests/
+│   ├── WatchLattice.Persistence.Tests/
+│   └── WatchLattice.Updater.Tests/
 ├── demos/
-│   ├── WatchLattice.Demos/             # Demo and measurement harness (not shipped)
-│   ├── scripts/                      # Windows scripts that observe the real hub process
+│   ├── WatchLattice.Demos/           # Demo and measurement harness (not shipped)
+│   ├── scripts/                      # Windows script that observes the real hub process
 │   └── RESULTS.md                    # Latest measured results
 └── docs/
-    └── adding-a-tool.md              # How to write a new module
+    ├── adding-a-tool.md              # How to write a new module
+    ├── alerts-and-tray.md            # Shared alerts and tray deployment
+    └── releasing.md                  # Cutting a release the updater can install
 ```
 
-### Upgrading from the ScanAlways name
-
-The project was called ScanAlways until October 2026. If you installed it
-under that name, remove the old service (`sc.exe stop "ScanAlways Protection"`
-then `sc.exe delete "ScanAlways Protection"`) before installing the new one.
-Logs and the canary manifest now live in `%LOCALAPPDATA%\WatchLattice`; the
-old `%LOCALAPPDATA%\ScanAlways` folder and any canaries it planted can be
-deleted by hand, and the new watcher will plant fresh ones.
+The project was called ScanAlways until v0.1.0. The two executables
+(`ScanAlways.Protection.Service.exe`, `ScanAlways.Tray.exe`), the
+`ScanAlways Protection` service and the `%LOCALAPPDATA%\ScanAlways` data
+folder keep that name on purpose, so installed copies keep updating and keep
+their canaries and baselines. See
+[names that must not change](docs/releasing.md#names-that-must-not-change).
 
 ## Design principles
 
@@ -225,7 +262,12 @@ deleted by hand, and the new watcher will plant fresh ones.
 - [x] Hub that runs every tool as a module
 - [x] Canary (honeypot) file watcher
 - [x] Defender health watchdog
-- [ ] Persistence and autostart auditor
+- [x] Firewall health watchdog (profiles and inbound default policy)
+- [x] Opt-in monitoring of new inbound firewall allow rules
+- [x] Persistence and autostart auditor
+- [x] Shared alert delivery and Windows tray companion
+- [x] Update checks and verified, user-approved installs from GitHub Releases
+- [ ] Code-signed releases
 - [x] Reproducible demos and measured overhead
 
 ## Contributing and security
