@@ -1,0 +1,28 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/
+*.user
+
+# Test results
+TestResults/
+[Cc]overage/
+*.trx
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+packages/
