@@ -173,7 +173,7 @@ public static class CanaryDemo
         report.Line("The canary alert log (`canary-alerts.log`), copied verbatim:");
         report.Line();
         report.Code(File.Exists(alertLog)
-            ? File.ReadAllLines(alertLog).Select(l => l.Replace(documents, "<Documents>", StringComparison.Ordinal))
+            ? Report.ReadShared(alertLog).ToList().Select(l => l.Replace(documents, "<Documents>", StringComparison.Ordinal))
             : new[] { "(no log written)" });
 
         report.Save();

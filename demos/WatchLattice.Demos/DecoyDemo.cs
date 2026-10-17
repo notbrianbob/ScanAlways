@@ -66,7 +66,7 @@ public static class DecoyDemo
             report.WriteFile($"samples-{intensity}.csv", ProcessSampler.ToCsv(samples));
             if (logExcerpt.Count == 0 && File.Exists(logPath))
             {
-                logExcerpt.AddRange(ReadShared(logPath).Take(8));
+                logExcerpt.AddRange(Report.ReadShared(logPath).Take(8));
             }
         }
 
@@ -152,15 +152,5 @@ public static class DecoyDemo
         var files = stats is null ? "0" : Report.Inv($"{stats.FilesTouched:N0} ({stats.FilesTouched / w.Wall.TotalSeconds:F1}/s)");
         return Report.Inv(
             $"| {w.Name} | {w.CpuPercentOfOneCore:F2} | {w.CpuPercentOfMachine:F3} | {reads} | {ops} | {files} | {Report.Bytes(w.PeakWorkingSetBytes)} | {Report.Bytes(w.PeakManagedHeapBytes)} |");
-    }
-
-    private static IEnumerable<string> ReadShared(string path)
-    {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        using var reader = new StreamReader(stream);
-        while (reader.ReadLine() is { } line)
-        {
-            yield return line;
-        }
     }
 }

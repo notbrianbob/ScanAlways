@@ -42,6 +42,20 @@ public sealed class Report
     public void WriteFile(string name, string content) =>
         File.WriteAllText(Path.Combine(OutputDir, name), content);
 
+    /// <summary>
+    /// Reads a log a module may still have open for writing. File.ReadAllLines
+    /// would fail on Windows, where the writer's handle denies plain readers.
+    /// </summary>
+    public static IEnumerable<string> ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        while (reader.ReadLine() is { } line)
+        {
+            yield return line;
+        }
+    }
+
     public void Save() => WriteFile("summary.md", Markdown);
 
     public static string Inv(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

@@ -89,7 +89,7 @@ public static class WatchdogDemo
         }
         report.Line("`defender-watchdog.log`, copied verbatim:");
         report.Line();
-        report.Code(File.Exists(alertLog) ? File.ReadAllLines(alertLog) : new[] { "(no log written)" });
+        report.Code(File.Exists(alertLog) ? Report.ReadShared(alertLog).ToList() : new[] { "(no log written)" });
 
         if (args.Live)
         {
