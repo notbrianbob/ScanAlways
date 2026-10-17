@@ -26,6 +26,12 @@ public static class HubServiceCollectionExtensions
         services.AddSingleton<IAlertPublisher>(sp => sp.GetRequiredService<AlertHub>());
         services.AddSingleton<IUpdateStatusPublisher>(sp => sp.GetRequiredService<AlertHub>());
         services.AddHostedService<AlertDeliveryService>();
+        services.AddOptions<EventLogAlertOptions>().Bind(configuration.GetSection(EventLogAlertOptions.SectionName));
+        if (OperatingSystem.IsWindows()) services.AddSingleton<IEventLogWriter, WindowsEventLogWriter>();
+        else services.AddSingleton<IEventLogWriter, UnsupportedEventLogWriter>();
+        services.AddSingleton<EventLogAlertService>();
+        services.AddSingleton<IAlertSink>(sp => sp.GetRequiredService<EventLogAlertService>());
+        services.AddHostedService(sp => sp.GetRequiredService<EventLogAlertService>());
         foreach (var module in enabled)
         {
             module.ConfigureServices(services, configuration);

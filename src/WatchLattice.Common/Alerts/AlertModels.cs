@@ -84,6 +84,16 @@ public interface IAlertPublisher
     void Publish(string module, string code, AlertSeverity severity, string title, string message, string? resource = null);
 }
 
+/// <summary>
+/// Receives each new alert once, after burst de-duplication. Restored history is
+/// not replayed. Called on the publisher's thread, so it must return quickly and
+/// be safe to call concurrently.
+/// </summary>
+public interface IAlertSink
+{
+    void Accept(ProtectionAlert alert);
+}
+
 public sealed class AlertDeliveryOptions
 {
     public bool Enabled { get; set; } = true;

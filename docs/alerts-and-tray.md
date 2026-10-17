@@ -7,6 +7,10 @@ removed Defender exclusions, and persistence removals appear as informational
 events. Module failures and modules that finish without a shutdown request also
 raise warnings. Decoy's cosmetic scan narration stays in its existing logs.
 
+Every alert is also written to the Windows Application event log, for Event
+Viewer, event forwarding and SIEMs. See [Event Log alerts](event-log.md) for
+the settings and event IDs.
+
 The tray is a separate, per-user Windows application. It reads the feed, shows
 new warnings/critical alerts as notification balloons, and opens an alert window
 on double-click. That window shows recent history, selected alert details, module

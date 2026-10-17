@@ -11,9 +11,14 @@ public sealed class AlertHub : IAlertPublisher, IUpdateStatusPublisher
     private readonly int _limit;
     private readonly Guid _session = Guid.NewGuid();
     private long _revision;
+    private readonly IAlertSink[] _sinks;
     private UpdateNotice? _update;
 
-    public AlertHub(IOptions<AlertDeliveryOptions> options) => _limit = Math.Clamp(options.Value.HistoryLimit, 1, 1000);
+    public AlertHub(IOptions<AlertDeliveryOptions> options, IEnumerable<IAlertSink>? sinks = null)
+    {
+        _limit = Math.Clamp(options.Value.HistoryLimit, 1, 1000);
+        _sinks = sinks?.ToArray() ?? Array.Empty<IAlertSink>();
+    }
 
     public void Publish(string module, string code, AlertSeverity severity, string title, string message, string? resource = null)
     {
@@ -28,6 +33,13 @@ public sealed class AlertHub : IAlertPublisher, IUpdateStatusPublisher
             _history.Add(alert);
             Trim();
             _revision++;
+        }
+
+        // Outside the lock: sinks only queue the alert, and a faulty one must not cost the others.
+        foreach (var sink in _sinks)
+        {
+            try { sink.Accept(alert); }
+            catch (Exception) { }
         }
     }
 

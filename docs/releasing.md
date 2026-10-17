@@ -58,6 +58,7 @@ name. Changing any of them would break updates from installed versions:
 | `ScanAlways Protection` (service name) | The updater stops and restarts the service by this name. |
 | `%LOCALAPPDATA%\ScanAlways\` and `%TEMP%\ScanAlways\` | Where the canary manifest, baselines, alert feed and logs live. A new folder would orphan planted canaries (the watcher refuses to overwrite files it has no record of) and reset every baseline. |
 | `Local\ScanAlways.Tray.*` (tray mutex) | Keeps a single tray running while an old and a new copy overlap during an update. |
+| `WatchLattice` event source and the [event IDs](event-log.md#event-ids) | SIEM rules and event forwarding subscriptions match on them. Add new IDs; never rename the source or change what an ID means. |
 
 Everything else (projects, namespaces, assemblies other than the two
 executables, display text, the release asset `WatchLattice-<version>-win-x64.zip`)
