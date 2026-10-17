@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>WatchLattice.Decoy</RootNamespace>
+    <Description>Always-scanning decoy module for the WatchLattice suite. Runs inside the WatchLattice hub.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WatchLattice.Common\WatchLattice.Common.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -18,16 +18,16 @@ run states, and hub connection status. Closing the window keeps the tray alive;
 With the .NET 8 SDK installed, run these in separate terminals under the same account:
 
 ```powershell
-dotnet run -c Release --project src/ScanAlways.Hub
-dotnet run -c Release --project src/ScanAlways.Tray
+dotnet run -c Release --project src/WatchLattice.Hub
+dotnet run -c Release --project src/WatchLattice.Tray
 ```
 
 Publish each application to its own directory:
 
 ```powershell
-dotnet publish src/ScanAlways.Hub -c Release -r win-x64 --self-contained false -o C:\ScanAlways\Hub
-dotnet publish src/ScanAlways.Tray -c Release -r win-x64 --self-contained false -o C:\ScanAlways\Tray
-& C:\ScanAlways\Tray\ScanAlways.Tray.exe
+dotnet publish src/WatchLattice.Hub -c Release -r win-x64 --self-contained false -o C:\WatchLattice\Hub
+dotnet publish src/WatchLattice.Tray -c Release -r win-x64 --self-contained false -o C:\WatchLattice\Tray
+& C:\WatchLattice\Tray\ScanAlways.Tray.exe
 ```
 
 The published tray requires the **.NET 8 Desktop Runtime**; the hub requires the
@@ -56,7 +56,7 @@ The tray considers a heartbeat older than 20 seconds stale. Its feed path can
 be overridden independently:
 
 ```powershell
-& C:\ScanAlways\Tray\ScanAlways.Tray.exe --feed 'C:\ProgramData\ScanAlways\Alerts\alerts.json'
+& C:\WatchLattice\Tray\ScanAlways.Tray.exe --feed 'C:\ProgramData\WatchLattice\Alerts\alerts.json'
 ```
 
 Run only one hub writer per feed and baseline path. Multiple companions can
@@ -76,7 +76,7 @@ For a **new dedicated directory**, an administrator can provision it as follows
 (replace `COMPUTER\you` with the intended tray account):
 
 ```powershell
-$feedDirectory = 'C:\ProgramData\ScanAlways\Alerts'
+$feedDirectory = 'C:\ProgramData\WatchLattice\Alerts'
 New-Item -ItemType Directory -Path $feedDirectory -ErrorAction Stop
 icacls.exe $feedDirectory /inheritance:r
 icacls.exe $feedDirectory /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' 'COMPUTER\you:(OI)(CI)RX'
@@ -87,7 +87,7 @@ Set the service's configuration to:
 ```json
 "Alerts": {
   "Enabled": true,
-  "FeedPath": "C:\\ProgramData\\ScanAlways\\Alerts\\alerts.json",
+  "FeedPath": "C:\\ProgramData\\WatchLattice\\Alerts\\alerts.json",
   "HistoryLimit": 200
 }
 ```
@@ -110,7 +110,7 @@ GitHub itself, verifies the SHA-256 checksum, stops and restarts the service,
 and the tray restarts on the new version. Declining the prompt changes nothing.
 If the tray is not installed next to the hub, the banner still appears and
 explains how to run the update from the hub's folder. See the
-[updater README](../src/ScanAlways.Updater/README.md) for every step and its limits.
+[updater README](../src/WatchLattice.Updater/README.md) for every step and its limits.
 
 ## Delivery behavior and limitations
 

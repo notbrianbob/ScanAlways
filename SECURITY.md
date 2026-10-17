@@ -1,11 +1,11 @@
 # Security policy
 
-ScanAlways is security software, so we hold it to a higher bar than most
+WatchLattice is security software, so we hold it to a higher bar than most
 projects: a bug here can weaken the machine it is meant to protect.
 
 ## Supported versions
 
-ScanAlways is pre-1.0. Only the latest commit on `main` receives security
+WatchLattice is pre-1.0. Only the latest commit on `main` receives security
 fixes. Please reproduce on `main` before reporting.
 
 | Version | Supported |
@@ -18,7 +18,7 @@ fixes. Please reproduce on `main` before reporting.
 **Please do not open a public issue for a security problem.**
 
 Report it privately through GitHub's
-[private vulnerability reporting](https://github.com/notbrianbob/ScanAlways/security/advisories/new)
+[private vulnerability reporting](https://github.com/notbrianbob/WatchLattice/security/advisories/new)
 (the repository's **Security** tab → **Report a vulnerability**). Include:
 
 - the affected module (or the hub) and the commit you tested,
@@ -28,7 +28,7 @@ Report it privately through GitHub's
 
 ## What to expect
 
-ScanAlways is maintained by a small team, so these are targets, not guarantees:
+WatchLattice is maintained by a small team, so these are targets, not guarantees:
 
 - **Acknowledgement** within 7 days.
 - **Assessment** (confirmed or not, and a severity) within 14 days.
@@ -45,7 +45,7 @@ service for others.
 
 In scope:
 
-- Anything that lets ScanAlways be used to **weaken** a machine: for example,
+- Anything that lets WatchLattice be used to **weaken** a machine: for example,
   causing it to disable, interfere with, or mislead Microsoft Defender, or to
   modify or delete user files.
 - Privilege escalation through the hub when it runs as a Windows service (for

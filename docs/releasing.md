@@ -44,3 +44,23 @@ Keeping `Hub` and `Tray` side by side is what lets **Install update** in the
 tray update both. The hub needs the .NET 8 Runtime and the tray the .NET 8
 Desktop Runtime. See [alerts and tray setup](alerts-and-tray.md) for running
 the service as LocalSystem with a user tray.
+
+## Names that must not change
+
+The project was renamed from ScanAlways to WatchLattice after v0.1.0. A few
+names are part of what an installed hub depends on, so they keep the old
+name. Changing any of them would break updates from installed versions:
+
+| Name | Why it is fixed |
+|---|---|
+| `Hub/ScanAlways.Protection.Service.exe` | Installed updaters refuse a package without it, and existing Windows services point at this file. The update installer replaces files in place; it never repoints a service. |
+| `Tray/ScanAlways.Tray.exe` | Installed updaters refuse a package without it, and use it to find the tray next to the hub. |
+| `ScanAlways Protection` (service name) | The updater stops and restarts the service by this name. |
+| `%LOCALAPPDATA%\ScanAlways\` and `%TEMP%\ScanAlways\` | Where the canary manifest, baselines, alert feed and logs live. A new folder would orphan planted canaries (the watcher refuses to overwrite files it has no record of) and reset every baseline. |
+| `Local\ScanAlways.Tray.*` (tray mutex) | Keeps a single tray running while an old and a new copy overlap during an update. |
+
+Everything else (projects, namespaces, assemblies other than the two
+executables, display text, the release asset `WatchLattice-<version>-win-x64.zip`)
+uses the WatchLattice name. `ReleaseLayoutCompatibilityTests` fails if the
+package names change. Moving to new names needs a release whose updater
+understands both, shipped and installed first.

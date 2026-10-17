@@ -1,15 +1,22 @@
-# ScanAlways
+# WatchLattice
 
-[![CI](https://github.com/notbrianbob/ScanAlways/actions/workflows/ci.yml/badge.svg)](https://github.com/notbrianbob/ScanAlways/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/notbrianbob/ScanAlways/actions/workflows/codeql.yml/badge.svg)](https://github.com/notbrianbob/ScanAlways/actions/workflows/codeql.yml)
+[![CI](https://github.com/notbrianbob/WatchLattice/actions/workflows/ci.yml/badge.svg)](https://github.com/notbrianbob/WatchLattice/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/notbrianbob/WatchLattice/actions/workflows/codeql.yml/badge.svg)](https://github.com/notbrianbob/WatchLattice/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)
 ![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6)
 
-A suite of small, complementary defense tools for Windows 11, designed to run
-**alongside** Microsoft Defender, never instead of it. All tools run together
-inside one lightweight background service, the **ScanAlways hub**, and each
-one can be switched on or off in a single config file.
+**Layered defense. Independent tools. Clear signals.**
+
+WatchLattice is an experimental, open-source Windows security toolkit that
+complements Microsoft Defender with deception-based defenses, ransomware
+tripwires, and continuous security-health monitoring. It is a supplement to a
+real anti-malware product, not a replacement for one.
+
+The tools are small and built for Windows 11, and they run **alongside**
+Defender, never instead of it. All of them run together inside one lightweight
+background service, the **WatchLattice hub**, and each one can be switched on
+or off in a single config file.
 
 ## Why complement Defender?
 
@@ -18,14 +25,14 @@ commodity malware is routinely tested against Defender before it is released,
 and many samples check for it specifically. Far fewer are built to anticipate
 small, unfamiliar tools.
 
-ScanAlways leans on that gap. Each module adds a cheap, slightly unusual layer
+WatchLattice leans on that gap. Each module adds a cheap, slightly unusual layer
 of deception or early warning that a given sample was probably not built to
 expect. It is defense in depth: Defender stays your primary engine for
-detection and removal, and ScanAlways adds friction and tripwires around it.
+detection and removal, and WatchLattice adds friction and tripwires around it.
 
 ## Threat model
 
-**What ScanAlways is meant to help with**
+**What WatchLattice is meant to help with**
 
 - Commodity malware and ransomware on a single-user Windows 11 machine, running
   with the logged-in user's privileges.
@@ -37,7 +44,7 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 **Assumptions**
 
 - Microsoft Defender (or another real anti-malware product) is installed, up
-  to date, and running. ScanAlways never replaces it.
+  to date, and running. WatchLattice never replaces it.
 - The attacker does not already have administrator or SYSTEM rights. An
   attacker with those can stop any user-mode tool, including this one.
 
@@ -45,27 +52,27 @@ detection and removal, and ScanAlways adds friction and tripwires around it.
 
 - Targeted attacks by someone who studies the machine before acting.
 - Kernel-mode threats, bootkits, and firmware implants.
-- Detecting or removing malware. ScanAlways modules observe, deceive, and
+- Detecting or removing malware. WatchLattice modules observe, deceive, and
   alert; they do not quarantine or delete anything.
 
 ## Tools
 
 | Module | Status | What it does |
 |--------|--------|--------------|
-| **Always-Scanning Decoy** ([`src/ScanAlways.Decoy`](src/ScanAlways.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/ScanAlways.Decoy/README.md). |
-| **Canary File Watcher** ([`src/ScanAlways.Canary`](src/ScanAlways.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/ScanAlways.Canary/README.md). |
-| **Defender Health Watchdog** ([`src/ScanAlways.DefenderWatchdog`](src/ScanAlways.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Also reports new Defender exclusions, weakened attack surface reduction rules, and cloud-delivered protection turned off or down. Read-only. See its [README](src/ScanAlways.DefenderWatchdog/README.md). |
-| **Firewall Health Watchdog** ([`src/ScanAlways.FirewallWatchdog`](src/ScanAlways.FirewallWatchdog/)) | Available | Reports disabled Windows Firewall profiles, profiles that allow unsolicited inbound traffic by default, and every change to a profile's default inbound action. Optionally (off by default) reports newly introduced inbound allow rules. A separate layer from the Defender watchdog. Read-only. See its [README](src/ScanAlways.FirewallWatchdog/README.md). |
-| **Persistence & Autostart Auditor** ([`src/ScanAlways.Persistence`](src/ScanAlways.Persistence/)) | Available | Records a baseline of Run/RunOnce keys, Startup files, and visible scheduled tasks, then reports additions, changes, removals, and gaps in coverage. Read-only. See its [README](src/ScanAlways.Persistence/README.md). |
+| **Always-Scanning Decoy** ([`src/WatchLattice.Decoy`](src/WatchLattice.Decoy/)) | Available | Makes the machine look like an anti-malware scan is permanently running, so malware that hides from scanners stays hidden. Read-only. See its [README](src/WatchLattice.Decoy/README.md). |
+| **Canary File Watcher** ([`src/WatchLattice.Canary`](src/WatchLattice.Canary/)) | Available | Plants decoy files in Desktop, Documents and Pictures and alerts the moment anything modifies, renames, or deletes one: an early ransomware tripwire. See its [README](src/WatchLattice.Canary/README.md). |
+| **Defender Health Watchdog** ([`src/WatchLattice.DefenderWatchdog`](src/WatchLattice.DefenderWatchdog/)) | Available | Checks every few minutes that Defender's real-time protection, tamper protection and signatures are actually on and current, and alerts when something turns them off. Also reports new Defender exclusions, weakened attack surface reduction rules, and cloud-delivered protection turned off or down. Read-only. See its [README](src/WatchLattice.DefenderWatchdog/README.md). |
+| **Firewall Health Watchdog** ([`src/WatchLattice.FirewallWatchdog`](src/WatchLattice.FirewallWatchdog/)) | Available | Reports disabled Windows Firewall profiles, profiles that allow unsolicited inbound traffic by default, and every change to a profile's default inbound action. Optionally (off by default) reports newly introduced inbound allow rules. A separate layer from the Defender watchdog. Read-only. See its [README](src/WatchLattice.FirewallWatchdog/README.md). |
+| **Persistence & Autostart Auditor** ([`src/WatchLattice.Persistence`](src/WatchLattice.Persistence/)) | Available | Records a baseline of Run/RunOnce keys, Startup files, and visible scheduled tasks, then reports additions, changes, removals, and gaps in coverage. Read-only. See its [README](src/WatchLattice.Persistence/README.md). |
 
 The optional **Windows tray companion** shows shared alerts, recent history,
 module run states, and hub connection status. See [alerts and tray setup](docs/alerts-and-tray.md).
 
-The **Update Checker** ([`src/ScanAlways.Updater`](src/ScanAlways.Updater/)) runs
+The **Update Checker** ([`src/WatchLattice.Updater`](src/WatchLattice.Updater/)) runs
 in the hub too. It checks this repository's GitHub Releases, tells you in the
 tray when a newer version is out, and installs it only when you choose
 **Install update**, after verifying the download's SHA-256 checksum. See its
-[README](src/ScanAlways.Updater/README.md) and [cutting a release](docs/releasing.md).
+[README](src/WatchLattice.Updater/README.md) and [cutting a release](docs/releasing.md).
 
 ## How it fits together
 
@@ -91,13 +98,23 @@ restarted with back-off, and the rest keep running. Modules are compiled into
 the hub; nothing is loaded from a plugins folder at runtime, so there is no
 way to drop a DLL next to the service and have it executed.
 
+## Demos and measured results
+
+[`demos/`](demos/) holds reproducible demonstrations of what the modules
+actually do, with measured overhead and the method used to measure it: the
+decoy's CPU, read I/O and memory at each intensity, a canary being tripped
+(with a control file that must not trip it), and the Defender watchdog's
+readout for healthy and degraded states. They show signals and costs, not
+protection against real malware, which these demos do not test. Latest
+numbers: [demos/RESULTS.md](demos/RESULTS.md).
+
 ## Quick start
 
 You need Windows 11 and the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```bash
-git clone https://github.com/notbrianbob/ScanAlways.git
-cd ScanAlways
+git clone https://github.com/notbrianbob/WatchLattice.git
+cd WatchLattice
 dotnet build -c Release
 dotnet test  -c Release
 ```
@@ -105,13 +122,13 @@ dotnet test  -c Release
 Run the hub in a console window (Ctrl+C to stop):
 
 ```bash
-dotnet run -c Release --project src/ScanAlways.Hub
+dotnet run -c Release --project src/WatchLattice.Hub
 ```
 
 See which modules are available and whether they are enabled:
 
 ```bash
-dotnet run -c Release --project src/ScanAlways.Hub -- --list-modules
+dotnet run -c Release --project src/WatchLattice.Hub -- --list-modules
 ```
 
 ### Install as a Windows service
@@ -119,8 +136,8 @@ dotnet run -c Release --project src/ScanAlways.Hub -- --list-modules
 From an elevated PowerShell:
 
 ```powershell
-dotnet publish src/ScanAlways.Hub -c Release -r win-x64 --self-contained false -o C:\ScanAlways
-sc.exe create "ScanAlways Protection" binPath= "C:\ScanAlways\ScanAlways.Protection.Service.exe" start= auto
+dotnet publish src/WatchLattice.Hub -c Release -r win-x64 --self-contained false -o C:\WatchLattice
+sc.exe create "ScanAlways Protection" binPath= "C:\WatchLattice\ScanAlways.Protection.Service.exe" start= auto
 sc.exe start "ScanAlways Protection"
 ```
 
@@ -145,7 +162,7 @@ sc.exe delete "ScanAlways Protection"
 ## Configuration
 
 Everything lives in `appsettings.json` next to the executable
-([source](src/ScanAlways.Hub/appsettings.json)). Any value can also be
+([source](src/WatchLattice.Hub/appsettings.json)). Any value can also be
 overridden with an environment variable or a command-line switch, for example
 `--Modules:Canary:Enabled=false`.
 
@@ -177,7 +194,7 @@ overridden with an environment variable or a command-line switch, for example
 
 ## Honest limits
 
-- ScanAlways **does not detect or remove malware**. The canary watcher and
+- WatchLattice **does not detect or remove malware**. The canary watcher and
   the Defender and firewall watchdogs raise alarms; they do not stop anything. If something is
   already running on your machine, use Defender or another real scanner.
 - Deception only works on malware that checks for the signals we emulate. Many
@@ -190,30 +207,41 @@ overridden with an environment variable or a command-line switch, for example
 ## Repository layout
 
 ```
-ScanAlways.sln
+WatchLattice.sln
 ├── src/
-│   ├── ScanAlways.Common/            # Shared library: module contract, hub supervisor, decoy engine, rolling log
-│   ├── ScanAlways.Hub/               # The hub executable (console app / Windows service)
-│   ├── ScanAlways.Decoy/             # Module: always-scanning decoy
-│   ├── ScanAlways.Canary/            # Module: canary file watcher (ransomware tripwire)
-│   ├── ScanAlways.DefenderWatchdog/  # Module: Defender health watchdog
-│   ├── ScanAlways.FirewallWatchdog/  # Module: Windows Firewall health watchdog
-│   ├── ScanAlways.Persistence/       # Module: persistence and autostart auditor
-│   ├── ScanAlways.Updater/           # Module + installer: update checks and verified installs
-│   └── ScanAlways.Tray/              # Windows tray notification companion
+│   ├── WatchLattice.Common/            # Shared library: module contract, hub supervisor, decoy engine, rolling log
+│   ├── WatchLattice.Hub/               # The hub executable (console app / Windows service)
+│   ├── WatchLattice.Decoy/             # Module: always-scanning decoy
+│   ├── WatchLattice.Canary/            # Module: canary file watcher (ransomware tripwire)
+│   ├── WatchLattice.DefenderWatchdog/  # Module: Defender health watchdog
+│   ├── WatchLattice.FirewallWatchdog/  # Module: Windows Firewall health watchdog
+│   ├── WatchLattice.Persistence/       # Module: persistence and autostart auditor
+│   ├── WatchLattice.Updater/           # Module + installer: update checks and verified installs
+│   └── WatchLattice.Tray/              # Windows tray notification companion
 ├── tests/
-│   ├── ScanAlways.Common.Tests/
-│   ├── ScanAlways.Decoy.Tests/
-│   ├── ScanAlways.Canary.Tests/
-│   ├── ScanAlways.DefenderWatchdog.Tests/
-│   ├── ScanAlways.FirewallWatchdog.Tests/
-│   ├── ScanAlways.Persistence.Tests/
-│   └── ScanAlways.Updater.Tests/
+│   ├── WatchLattice.Common.Tests/
+│   ├── WatchLattice.Decoy.Tests/
+│   ├── WatchLattice.Canary.Tests/
+│   ├── WatchLattice.DefenderWatchdog.Tests/
+│   ├── WatchLattice.FirewallWatchdog.Tests/
+│   ├── WatchLattice.Persistence.Tests/
+│   └── WatchLattice.Updater.Tests/
+├── demos/
+│   ├── WatchLattice.Demos/           # Demo and measurement harness (not shipped)
+│   ├── scripts/                      # Windows script that observes the real hub process
+│   └── RESULTS.md                    # Latest measured results
 └── docs/
     ├── adding-a-tool.md              # How to write a new module
     ├── alerts-and-tray.md            # Shared alerts and tray deployment
     └── releasing.md                  # Cutting a release the updater can install
 ```
+
+The project was called ScanAlways until v0.1.0. The two executables
+(`ScanAlways.Protection.Service.exe`, `ScanAlways.Tray.exe`), the
+`ScanAlways Protection` service and the `%LOCALAPPDATA%\ScanAlways` data
+folder keep that name on purpose, so installed copies keep updating and keep
+their canaries and baselines. See
+[names that must not change](docs/releasing.md#names-that-must-not-change).
 
 ## Design principles
 
@@ -226,7 +254,7 @@ ScanAlways.sln
 - **Honest about limits.** Every module's README says plainly what it does and
   what it cannot do.
 - **One process, many small tools.** Each tool is its own project and module,
-  shared code lives in `ScanAlways.Common`, and the hub runs them all.
+  shared code lives in `WatchLattice.Common`, and the hub runs them all.
 
 ## Roadmap
 
@@ -240,7 +268,7 @@ ScanAlways.sln
 - [x] Shared alert delivery and Windows tray companion
 - [x] Update checks and verified, user-approved installs from GitHub Releases
 - [ ] Code-signed releases
-- [ ] Measured overhead benchmarks
+- [x] Reproducible demos and measured overhead
 
 ## Contributing and security
 
@@ -253,5 +281,5 @@ Please report vulnerabilities privately as described in
 
 ## License
 
-[MIT](LICENSE). ScanAlways is early and experimental; use it as an extra layer
+[MIT](LICENSE). WatchLattice is early and experimental; use it as an extra layer
 on top of a real, up-to-date anti-malware product.

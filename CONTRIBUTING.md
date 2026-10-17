@@ -1,6 +1,6 @@
-# Contributing to ScanAlways
+# Contributing to WatchLattice
 
-Thanks for helping. ScanAlways is a suite of small tools that run **alongside**
+Thanks for helping. WatchLattice is a suite of small tools that run **alongside**
 Microsoft Defender, so the most important rule is that nothing here may make a
 machine less safe than it was before.
 
@@ -27,8 +27,8 @@ Windows 11 is the target platform, but the solution builds and tests on Linux
 and macOS too.
 
 ```bash
-git clone https://github.com/notbrianbob/ScanAlways.git
-cd ScanAlways
+git clone https://github.com/notbrianbob/WatchLattice.git
+cd WatchLattice
 dotnet build -c Release
 dotnet test  -c Release
 ```
@@ -36,7 +36,7 @@ dotnet test  -c Release
 Run the hub locally (Ctrl+C to stop):
 
 ```bash
-dotnet run -c Release --project src/ScanAlways.Hub
+dotnet run -c Release --project src/WatchLattice.Hub
 ```
 
 ## Making a change
@@ -44,8 +44,8 @@ dotnet run -c Release --project src/ScanAlways.Hub
 1. Open an issue first for anything larger than a small fix, so we can agree
    on the approach. New tools use the **New tool proposal** template.
 2. Branch from `main` and keep each pull request focused on one thing.
-3. Add or update tests. Shared code is tested in `tests/ScanAlways.Common.Tests`,
-   each tool in `tests/ScanAlways.<Tool>.Tests`.
+3. Add or update tests. Shared code is tested in `tests/WatchLattice.Common.Tests`,
+   each tool in `tests/WatchLattice.<Tool>.Tests`.
 4. Update the relevant README(s), including the Tools table in the top-level
    README when you add or change a tool.
 5. Make sure `dotnet build` and `dotnet test` pass. CI runs both on Windows and
@@ -63,7 +63,7 @@ contract, configuration, and testing.
   `sealed` classes by default, XML doc comments on public types.
 - Prefer clarity over cleverness. This code is read by people deciding whether
   to trust it.
-- Shared code goes in `ScanAlways.Common` only once a second tool needs it.
+- Shared code goes in `WatchLattice.Common` only once a second tool needs it.
 
 ## Commit messages
 
