@@ -102,6 +102,10 @@ public static class AlertEventIds
         [("Persistence", "ENTRY_REMOVED")] = 5004,
         [("Persistence", "SOURCE_UNAVAILABLE")] = 5005,
         [("Persistence", "SOURCE_RECOVERED")] = 5006,
+        [("Persistence", "VERIFY_PASSED")] = 5010,
+        [("Persistence", "VERIFY_NEEDS_REVIEW")] = 5011,
+        [("Persistence", "VERIFY_SUSPICIOUS")] = 5012,
+        [("Persistence", "VERIFICATION_STORE_FAILED")] = 5013,
 
         [("Updater", "UPDATE_AVAILABLE")] = 6001,
     };

@@ -11,6 +11,12 @@ public sealed class PersistenceOptions
     public string? BaselinePath { get; set; }
     public int MaxStartupFileBytes { get; set; } = 4 * 1024 * 1024;
 
+    /// <summary>Verify a scheduled task automatically when an alert reports it added or changed. Never remediates.</summary>
+    public bool AutoVerifyAlerts { get; set; } = true;
+
+    /// <summary>Certificate common names or organizations, besides Microsoft, whose signatures pass the publisher check.</summary>
+    public string[] FamiliarPublishers { get; set; } = Array.Empty<string>();
+
     public string ResolveBaselinePath() => Path.GetFullPath(Environment.ExpandEnvironmentVariables(
         string.IsNullOrWhiteSpace(BaselinePath) ? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ScanAlways", "persistence-baseline.json")

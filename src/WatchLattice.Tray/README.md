@@ -3,7 +3,8 @@
 A Windows Forms notification-area companion for the WatchLattice hub. It reads
 the local shared alert feed and provides balloons, a connected/offline
 indicator, and the [dashboard](../../docs/dashboard.md): module status, alert
-details, the hub's recent activity, and its settings.
+details with read-only persistence verification, the hub's recent activity,
+and its settings.
 
 Run with `--edit-settings`, it is the settings editor instead. The dashboard
 starts it that way through Windows' administrator prompt; it is not meant to

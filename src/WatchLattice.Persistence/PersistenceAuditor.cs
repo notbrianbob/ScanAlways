@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WatchLattice.Common;
 using WatchLattice.Common.Alerts;
+using WatchLattice.Persistence.Verification;
 
 namespace WatchLattice.Persistence;
 
@@ -14,16 +15,18 @@ public sealed class PersistenceAuditor
     private readonly PersistenceOptions _options;
     private readonly ILogger<PersistenceAuditor> _logger;
     private readonly IAlertPublisher? _alerts;
+    private readonly IChangeEvidenceSink? _evidence;
     private readonly Dictionary<string, string> _problems = new(StringComparer.OrdinalIgnoreCase);
     private PersistenceBaseline? _baseline;
 
     public PersistenceAuditor(IPersistenceProvider provider, IOptions<PersistenceOptions> options,
-        ILogger<PersistenceAuditor> logger, IAlertPublisher? alerts = null)
+        ILogger<PersistenceAuditor> logger, IAlertPublisher? alerts = null, IChangeEvidenceSink? evidence = null)
     {
         _provider = provider;
         _options = options.Value;
         _logger = logger;
         _alerts = alerts;
+        _evidence = evidence;
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -82,6 +85,10 @@ public sealed class PersistenceAuditor
                     changed = true;
                     var resource = source.Id + "/" + difference.Id;
                     if (_options.IgnoredEntries.Any(pattern => FileSystemName.MatchesSimpleExpression(pattern, resource, ignoreCase: true))) continue;
+                    // Hand over the complete before/after first; the alert message only carries excerpts.
+                    if (difference.Kind != PersistenceChangeKind.Removed)
+                        _evidence?.Stage(resource, new PersistenceObservation(source.Id, difference.Id, difference.Kind,
+                            difference.Before, difference.After, DateTimeOffset.UtcNow));
                     Emit("ENTRY_" + difference.Kind.ToString().ToUpperInvariant(),
                         difference.Kind == PersistenceChangeKind.Removed ? AlertSeverity.Info : AlertSeverity.Warning,
                         $"Autostart entry {difference.Kind.ToString().ToLowerInvariant()}",

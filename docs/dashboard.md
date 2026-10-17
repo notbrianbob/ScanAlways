@@ -7,12 +7,14 @@ It has four tabs:
 | Tab | What it shows |
 |---|---|
 | **Overview** | Hub connection, and every module with its running state, whether it is turned on in the settings, and what it does. **Turn on…/Turn off…** and **Change settings…** open the settings editor. |
-| **Alerts** | Recent alerts from every module, newest first, with full details for the selected one. |
+| **Alerts** | Recent alerts from every module, newest first, with full details for the selected one. For persistence alerts, the **Verification** column, **Verify entry** and **View verification details…** (see [verifying changed scheduled tasks](../src/WatchLattice.Persistence/README.md#verifying-changed-scheduled-tasks)). |
 | **Activity** | The hub's own recent log: modules starting, stopping, failing and recovering, checks that could not run, feed and Event Log problems. Filter by level or text. |
 | **Settings** | Every setting the hub reads, its current value, and whether it comes from appsettings.json or is the built-in default. |
 
 The dashboard runs as you, with your normal rights, and cannot change
-anything by itself.
+anything by itself. **Verify entry** only reads: it checks a scheduled task,
+its COM registration and its files with your rights and saves the result in
+your own profile.
 
 ## Changing settings needs an administrator
 
@@ -119,3 +121,9 @@ checked by hand:
    Save stays disabled.
 5. On a standard (non-administrator) account, the prompt asks for an
    administrator's password.
+6. Alerts: after Windows reschedules `SvcRestartTask` (or after
+   `ENTRY_CHANGED` for any task), the alert's Verification column shows the
+   automatic outcome and a `VERIFY_*` alert follows. **Verify entry** shows
+   *Verifying…*, then *(manual)*, with no administrator prompt. **View
+   verification details…** lists both runs; the report shows the logged change
+   under *At alert time* and the DLL, hash and signer under *Current state*.

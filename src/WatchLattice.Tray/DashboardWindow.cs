@@ -5,13 +5,15 @@ using Microsoft.Extensions.Logging;
 using WatchLattice.Common.Activity;
 using WatchLattice.Common.Alerts;
 using WatchLattice.Common.Settings;
+using WatchLattice.Persistence.Verification;
 
 namespace WatchLattice.Tray;
 
 /// <summary>
 /// The dashboard: hub and module status, alerts, the hub's recent activity,
 /// and its settings. It runs as the signed-in user and changes nothing itself;
-/// changing a setting opens the elevated settings editor.
+/// changing a setting opens the elevated settings editor. Verify entry runs a
+/// read-only persistence verification here, with the user's own rights.
 /// </summary>
 internal sealed class DashboardWindow : Form
 {
@@ -31,6 +33,9 @@ internal sealed class DashboardWindow : Form
     // Alerts
     private readonly ListView _alerts = NewList("Recent alerts");
     private readonly TextBox _alertDetails = NewDetails("Selected alert details", "Select an alert to see its details.");
+    private readonly Button _verifyEntry = new() { Text = "Verify entry", AutoSize = true, Enabled = false };
+    private readonly Button _viewVerification = new() { Text = "View verification details…", AutoSize = true, Enabled = false };
+    private readonly Label _verificationNote = new() { AutoSize = true, Margin = new Padding(12, 7, 0, 0), MaximumSize = new Size(640, 0) };
 
     // Activity
     private readonly ListView _activity = NewList("Hub activity");
@@ -67,11 +72,22 @@ internal sealed class DashboardWindow : Form
     private bool _loadingSettings;
     private bool _editing;
 
+    // Verification findings for persistence alerts
+    private readonly VerificationFindings _findings;
+    private readonly Dictionary<Guid, VerificationRecord> _verification = new();
+    private readonly HashSet<Guid> _verifying = new();
+    private readonly Dictionary<Guid, VerificationWindow> _verificationWindows = new();
+    private readonly CancellationTokenSource _closing = new();
+    private PersistenceVerificationEngine? _engine;
+    private string[]? _engineFamiliar;
+    private bool _refreshingFindings;
+
     /// <summary>The user chose Install update; the tray confirms and starts the elevated updater.</summary>
     public event Action? InstallRequested;
 
     public DashboardWindow(string path)
     {
+        _findings = new VerificationFindings(VerificationStore.PathForFeed(path));
         Text = "WatchLattice";
         Icon = SystemIcons.Shield;
         Size = new Size(1040, 700);
@@ -107,6 +123,7 @@ internal sealed class DashboardWindow : Form
             Shield(_editSettings);
         };
         Shown += async (_, _) => await LoadSettingsAsync();
+        FormClosed += (_, _) => _closing.Cancel();
     }
 
     public void ShowAlertsTab() => _tabs.SelectedIndex = 1;
@@ -141,10 +158,19 @@ internal sealed class DashboardWindow : Form
         _alerts.Columns.Add("Time", 150);
         _alerts.Columns.Add("Severity", 80);
         _alerts.Columns.Add("Module", 130);
-        _alerts.Columns.Add("Alert", 560);
+        _alerts.Columns.Add("Alert", 450);
+        _alerts.Columns.Add("Verification", 130);
         _alerts.SelectedIndexChanged += (_, _) => ShowAlertDetails();
+        _alerts.DoubleClick += (_, _) => ViewVerification();
+        _verifyEntry.Click += async (_, _) => { if (SelectedAlert() is { } alert) await VerifyAsync(alert); };
+        _viewVerification.Click += (_, _) => ViewVerification();
+        _verificationNote.Text = "Verify entry checks a changed scheduled task's current state without running it, then keeps the result with the alert.";
+
+        var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(6), WrapContents = true };
+        buttons.Controls.AddRange(new Control[] { _verifyEntry, _viewVerification, _verificationNote });
         var page = new TabPage("Alerts");
         page.Controls.Add(Split(_alerts, _alertDetails));
+        page.Controls.Add(buttons);
         return page;
     }
 
@@ -195,6 +221,7 @@ internal sealed class DashboardWindow : Form
         ShowUpdate(snapshot?.Update);
         ShowModules();
         if (snapshot is null) return;
+        _ = RefreshFindingsAsync();
         var alerts = snapshot.Alerts.Reverse().ToArray();
         var ids = alerts.Select(a => a.Id).ToArray();
         if (_displayedAlerts.SequenceEqual(ids)) return;
@@ -203,7 +230,11 @@ internal sealed class DashboardWindow : Form
         _alerts.Items.Clear();
         foreach (var alert in alerts)
         {
-            var item = new ListViewItem(new[] { alert.At.ToLocalTime().ToString("g"), alert.Severity.ToString(), alert.Module, alert.Title }) { Tag = alert };
+            var item = new ListViewItem(new[] { alert.At.ToLocalTime().ToString("g"), alert.Severity.ToString(), alert.Module, alert.Title, "" })
+            {
+                Tag = alert, UseItemStyleForSubItems = false,
+            };
+            ShowVerificationCell(item);
             _alerts.Items.Add(item);
             if (alert.Id == selected) item.Selected = true;
         }
@@ -211,6 +242,7 @@ internal sealed class DashboardWindow : Form
         _displayedAlerts = ids;
         if (alerts.Length == 0) _alertDetails.Text = "No alerts have been recorded yet.";
         else if (_alerts.SelectedItems.Count == 0) _alertDetails.Text = "Select an alert to see its details.";
+        UpdateVerificationButtons();
     }
 
     /// <summary>New activity lines from the hub, or why they cannot be read.</summary>
@@ -424,10 +456,170 @@ internal sealed class DashboardWindow : Form
 
     private void ShowAlertDetails()
     {
-        if (_alerts.SelectedItems.Count == 0) return;
-        var alert = (ProtectionAlert)_alerts.SelectedItems[0].Tag!;
+        UpdateVerificationButtons();
+        if (SelectedAlert() is not { } alert) return;
         _alertDetails.Text = $"{alert.Title}\r\n{alert.At.ToLocalTime():F} • {alert.Module} • {alert.Severity}\r\nCode: {alert.Code}\r\n"
-            + (alert.Resource is null ? "" : $"Source: {alert.Resource}\r\n") + "\r\n" + alert.Message.Replace("\n", "\r\n");
+            + (alert.Resource is null ? "" : $"Source: {alert.Resource}\r\n") + "\r\n" + alert.Message.Replace("\n", "\r\n")
+            + VerificationSummary(alert);
+    }
+
+    private ProtectionAlert? SelectedAlert() => _alerts.SelectedItems.Count == 0 ? null : _alerts.SelectedItems[0].Tag as ProtectionAlert;
+
+    private VerificationRecord? RecordFor(ProtectionAlert alert) =>
+        VerificationFindings.LinkedAlertId(alert) is { } id && _verification.TryGetValue(id, out var record) ? record : null;
+
+    private bool IsVerifying(ProtectionAlert alert) => VerificationFindings.LinkedAlertId(alert) is { } id && _verifying.Contains(id);
+
+    /// <summary>The verification part of the details pane, with the logged and the current state named apart.</summary>
+    private string VerificationSummary(ProtectionAlert alert)
+    {
+        if (VerificationFindings.LinkedAlertId(alert) is null) return "";
+        var text = "\r\n\r\nVERIFICATION\r\n";
+        if (IsVerifying(alert)) return text + "Checking the entry's current state now. This only reads; nothing is run or changed.";
+        if (RecordFor(alert) is not { } record)
+            return text + (PersistenceVerificationCoordinator.IsEntryAlert(alert.Code)
+                ? "No evidence was stored for this alert, so it cannot be verified here. Alerts from before v0.3.0 and removed entries have none."
+                : "The findings this alert refers to are no longer stored.");
+        if (record.Latest is not { } run)
+            return text + "Not verified yet. Choose Verify entry to check the current state against the evidence logged with the alert.";
+        text += $"{VerificationFindings.OutcomeText(run.Outcome)} ({run.Trigger.ToString().ToLowerInvariant()}, {run.CompletedAt.ToLocalTime():g}, as {run.CheckedAs}).\r\n{run.Summary}\r\n";
+        foreach (var check in run.Checks.Where(c => c.Status != CheckStatus.Pass))
+            text += $"  [{check.Status}] {check.Title}: {check.Detail}\r\n";
+        if (run.LoggedChanges.Count > 0)
+            text += "Logged change (at alert time): " + string.Join(", ", run.LoggedChanges.Select(c => c.Field)) + "\r\n";
+        if (run.ChangesSinceAlert.Count > 0)
+            text += "Changed since the alert: " + string.Join(", ", run.ChangesSinceAlert.Select(c => c.Field)) + "\r\n";
+        return text + "View verification details… shows every check and the evidence.";
+    }
+
+    private void ShowVerificationCell(ListViewItem item)
+    {
+        if (item.Tag is not ProtectionAlert alert || item.SubItems.Count < 5) return;
+        var cell = item.SubItems[4];
+        var record = RecordFor(alert);
+        cell.ForeColor = SystemColors.WindowText;
+        if (VerificationFindings.LinkedAlertId(alert) is null) cell.Text = "";
+        else if (IsVerifying(alert)) cell.Text = "Verifying…";
+        else if (record is null) cell.Text = PersistenceVerificationCoordinator.IsEntryAlert(alert.Code) ? "No evidence" : "";
+        else if (record.Latest is not { } run) cell.Text = "Not verified";
+        else
+        {
+            cell.Text = VerificationFindings.OutcomeText(run.Outcome) + (run.Trigger == VerificationTrigger.Manual ? " (manual)" : "");
+            cell.ForeColor = VerificationWindow.OutcomeColor(run.Outcome);
+        }
+    }
+
+    private void UpdateVerificationButtons()
+    {
+        var alert = SelectedAlert();
+        var record = alert is null ? null : RecordFor(alert);
+        _verifyEntry.Enabled = alert is not null && record is not null && !IsVerifying(alert);
+        _viewVerification.Enabled = record is not null;
+        if (_findings.Problem is { } problem) _verificationNote.Text = problem;
+    }
+
+    /// <summary>Re-reads the stored findings off the UI thread and updates the Verification column.</summary>
+    private async Task RefreshFindingsAsync()
+    {
+        if (_refreshingFindings || IsDisposed) return;
+        _refreshingFindings = true;
+        try
+        {
+            var alerts = _snapshot?.Alerts.ToArray() ?? Array.Empty<ProtectionAlert>();
+            var records = await Task.Run(() =>
+            {
+                _findings.Refresh();
+                return alerts.Where(a => VerificationFindings.LinkedAlertId(a) is not null)
+                    .Select(a => (Id: VerificationFindings.LinkedAlertId(a)!.Value, Record: _findings.For(a)))
+                    .DistinctBy(x => x.Id)
+                    .ToArray();
+            });
+            if (IsDisposed) return;
+            var changed = false;
+            foreach (var (id, record) in records)
+            {
+                if (record is null) changed |= _verification.Remove(id);
+                else if (!_verification.TryGetValue(id, out var known) || !SameRuns(known, record))
+                {
+                    _verification[id] = record;
+                    changed = true;
+                    if (_verificationWindows.TryGetValue(id, out var window) && !window.IsDisposed) window.ShowRecord(record);
+                }
+            }
+            if (changed) ShowVerificationState();
+            else UpdateVerificationButtons();
+        }
+        finally { _refreshingFindings = false; }
+    }
+
+    private static bool SameRuns(VerificationRecord a, VerificationRecord b) =>
+        a.Runs.Select(r => r.Id).SequenceEqual(b.Runs.Select(r => r.Id));
+
+    private void ShowVerificationState()
+    {
+        _alerts.BeginUpdate();
+        foreach (ListViewItem item in _alerts.Items) ShowVerificationCell(item);
+        _alerts.EndUpdate();
+        ShowAlertDetails();
+    }
+
+    /// <summary>
+    /// Verifies the alert's entry again now. It runs here as the signed-in
+    /// user (no elevation), only reads, and keeps the result in the user's
+    /// own findings file; the hub's findings are never written from here.
+    /// </summary>
+    private async Task VerifyAsync(ProtectionAlert alert)
+    {
+        if (VerificationFindings.LinkedAlertId(alert) is not { } id || !_verifying.Add(id)) return;
+        _verificationWindows.TryGetValue(id, out var window);
+        window?.SetVerifying(true);
+        ShowVerificationState();
+        string? problem = null;
+        try
+        {
+            var engine = Engine();
+            await Task.Run(() => _findings.VerifyAsync(alert, engine, _closing.Token));
+        }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested) { return; }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            problem = "Verification could not be completed: " + ex.Message;
+        }
+        finally { _verifying.Remove(id); }
+        if (IsDisposed) return;
+        if (window is { IsDisposed: false }) window.SetVerifying(false, problem);
+        if (problem is not null) _verificationNote.Text = problem;
+        ShowVerificationState();
+        await RefreshFindingsAsync();
+    }
+
+    /// <summary>The engine, built with the hub's familiar publishers so manual and automatic runs judge alike.</summary>
+    private PersistenceVerificationEngine Engine()
+    {
+        var familiar = _description is not null && SettingValues.Get(_description.Values, "Persistence:FamiliarPublishers") is JsonArray list
+            ? list.Select(n => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : null).OfType<string>().ToArray()
+            : Array.Empty<string>();
+        if (_engine is null || _engineFamiliar is null || !_engineFamiliar.SequenceEqual(familiar))
+        {
+            _engine = VerificationFactory.CreateEngine(familiar);
+            _engineFamiliar = familiar;
+        }
+        return _engine;
+    }
+
+    private void ViewVerification()
+    {
+        if (SelectedAlert() is not { } alert || RecordFor(alert) is not { } record) return;
+        if (_verificationWindows.TryGetValue(record.AlertId, out var open) && !open.IsDisposed)
+        {
+            open.Activate();
+            return;
+        }
+        var window = new VerificationWindow(alert, record, () => VerifyAsync(alert));
+        window.FormClosed += (_, _) => _verificationWindows.Remove(record.AlertId);
+        _verificationWindows[record.AlertId] = window;
+        if (IsVerifying(alert)) window.SetVerifying(true);
+        window.Show(this);
     }
 
     private static ListView NewList(string name) => new()
