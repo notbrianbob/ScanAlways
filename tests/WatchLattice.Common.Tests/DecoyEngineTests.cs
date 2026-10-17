@@ -103,7 +103,7 @@ public class DecoyEngineTests
         var dir = Directory.CreateTempSubdirectory("watchlattice-tiny");
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(dir.FullName, "only.txt"), "hello");
+            await File.WriteAllTextAsync(Path.Join(dir.FullName, "only.txt"), "hello");
 
             var (sweeps, wait) = await RunUntilSweepWaitAsync(dir.FullName);
 
