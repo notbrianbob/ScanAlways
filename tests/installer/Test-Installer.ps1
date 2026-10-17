@@ -46,7 +46,8 @@ function Wait-Until([scriptblock]$Condition, [int]$Seconds = 60) {
 
 function Invoke-Script([string]$Path, [string[]]$Arguments) {
     Write-Host "> $Path $($Arguments -join ' ')"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Path @Arguments
+    # Out-Host keeps the script's output in the log instead of in this function's return value.
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Path @Arguments | Out-Host
     $LASTEXITCODE
 }
 
