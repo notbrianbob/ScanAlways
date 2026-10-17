@@ -1,8 +1,10 @@
 # Shared alerts and Windows tray companion
 
 The hub routes Canary, Defender, Firewall, and Persistence alerts into one
-bounded local history. Defender and firewall recovery, firewall policy changes
-back to Block, and persistence removals appear as informational events. Module failures and modules that finish without a shutdown request also
+bounded local history. New Defender exclusions and weakened ASR rules appear as
+warnings. Defender and firewall recovery, firewall policy changes back to Block,
+removed Defender exclusions, and persistence removals appear as informational
+events. Module failures and modules that finish without a shutdown request also
 raise warnings. Decoy's cosmetic scan narration stays in its existing logs.
 
 The tray is a separate, per-user Windows application. It reads the feed, shows

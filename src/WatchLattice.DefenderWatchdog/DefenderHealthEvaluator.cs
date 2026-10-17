@@ -37,11 +37,17 @@ public sealed record DefenderHealthReport(
     };
 }
 
+/// <summary>A one-off change between two checks, such as a new exclusion or a weakened ASR rule.</summary>
+public sealed record DefenderChange(string Code, FindingSeverity Severity, string Title, string Message, string? Resource = null)
+{
+    public override string ToString() => $"[{Severity}] {Message}";
+}
+
 /// <summary>
 /// Pure rules that turn a <see cref="DefenderStatus"/> into findings. No I/O,
 /// so every rule is unit-tested without Defender.
 /// </summary>
-public static class DefenderHealthEvaluator
+public static partial class DefenderHealthEvaluator
 {
     public const string StatusUnavailable = "STATUS_UNAVAILABLE";
     public const string NotRunning = "NOT_RUNNING";
@@ -122,6 +128,11 @@ public static class DefenderHealthEvaluator
         if (!passive && !notRunning)
         {
             AddSignatureFindings(status, options, now, findings);
+        }
+
+        if (options.MonitorSettings)
+        {
+            AddSettingsFindings(status, options, defenderActive: !passive && !notRunning, findings);
         }
 
         var health = findings.Any(f => f.Severity == FindingSeverity.Critical) ? DefenderHealth.Critical

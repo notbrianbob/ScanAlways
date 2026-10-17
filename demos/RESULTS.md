@@ -13,16 +13,92 @@ your hardware and your Defender configuration.
 - **Decoy CPU.** At its paced rates the decoy's CPU cost is below what the
   per-second sampling can resolve (the paced rows sit within the noise of the
   idle baseline). Measured directly with the cap lifted, one file costs about
-  0.04 ms of CPU on the Linux container, which works out to roughly 0.01% of
-  one core at `Balanced` (3 files/s) and 0.03% at `FullScan` (8 files/s).
-- **Decoy reads.** About 100 KiB/s of logical reads at `Balanced` and
-  250 KiB/s at `FullScan`, as the hub defaults intend (up to 64 KiB from each
-  file, 3 or 8 files a second).
+  0.04 ms of CPU on the Linux container and 0.07 ms on the Windows runner,
+  which works out to roughly 0.01 to 0.02% of one core at `Balanced`
+  (3 files/s) and 0.03 to 0.06% at `FullScan` (8 files/s).
+- **The shipped hub on Windows.** Observed from outside, the real
+  `ScanAlways.Protection.Service.exe` running only the decoy at `Balanced`
+  used 0.58% of one core (0.14% of the machine), about 90 KiB/s of reads and a
+  46 MiB working set, .NET runtime included.
+- **Decoy reads.** About 90 to 100 KiB/s of logical reads at `Balanced` and
+  240 to 255 KiB/s at `FullScan`, as the hub defaults intend (up to 64 KiB from
+  each file, 3 or 8 files a second).
 - **Canary watcher.** No measurable CPU while armed and idle. Overwrite,
-  rename and delete each raised an alert within a few milliseconds; the
-  control file in the same folder raised none.
+  rename and delete each raised an alert within 1 to 7 ms; the control file in
+  the same folder raised none.
 - **Defender watchdog.** Readouts match the documented rules for each recorded
-  state, and alerts fire once on change, not on every check.
+  state, and alerts fire once on change, not on every check. One live check
+  (starting Windows PowerShell and running `Get-MpComputerStatus`) took about
+  0.9 s, once every five minutes by default.
+
+## Run 2: Windows (GitHub Actions)
+
+Environment: `windows-latest` GitHub-hosted runner, .NET 8, run from
+[the Demos workflow](../.github/workflows/demos.yml) on 2026-10-17. The
+runner image ships with Defender's real-time protection switched off, so
+the live readout below is a genuinely degraded machine, not a typical PC.
+
+### Decoy (harness)
+
+| Window | CPU (% of one core) | CPU (% of machine) | Logical reads | Read calls/s | Files opened | Peak working set |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline (harness idle) | 0.42 | 0.104 | 0 B/s | 0.0 | 0 | 51.18 MiB |
+| Decoy Balanced | 0.65 | 0.163 | 92.8 KiB/s | 3.0 | 180 (3.0/s) | 57.09 MiB |
+| Decoy FullScan | 0.68 | 0.169 | 238.8 KiB/s | 8.0 | 478 (8.0/s) | 59.96 MiB |
+
+Baseline noise was ±0.71% of one core per second (±0.18% on a window mean).
+With the cap lifted the engine opened 206,318 files in 15 s using 14,953 ms
+of CPU: **0.072 ms per file**, predicting 0.007% / 0.022% / 0.058% of one core
+at `Idle` / `Balanced` / `FullScan`.
+
+### Decoy (the real hub, seen from outside)
+
+`demos/scripts/Show-DecoySignals.ps1`, hub started with only the decoy at
+`Balanced`, 60 s window:
+
+```text
+Id ProcessName                   Path
+-- -----------                   ----
+1804 ScanAlways.Protection.Service <publish>\ScanAlways.Protection.Service.exe
+```
+
+| Wall | CPU (% of one core) | CPU (% of machine) | Logical reads | Read calls/s | Peak working set |
+|---:|---:|---:|---:|---:|---:|
+| 60 s | 0.58 | 0.144 | 90.5 KiB/s | 3.0 | 46.3 MiB |
+
+### Canary watcher
+
+| Window | CPU (% of one core) | Logical reads |
+|---|---:|---:|
+| Baseline (nothing armed) | 0.104 | 0 B/s |
+| Armed, nothing happening | 0.104 | 0 B/s |
+
+| Action | Expected | Result | Time to alert |
+|---|---|---|---:|
+| Create and edit an ordinary file next to the canaries (control) | no alert | no alert | n/a |
+| Overwrite the first 4 KiB of a canary with random bytes | alert | alert: Modified | 3.8 ms |
+| Rename a canary to `.locked` | alert | alert: Renamed | 1.0 ms |
+| Delete a canary | alert | alert: Deleted | 0.7 ms |
+
+### Defender watchdog, live readout of the runner
+
+```text
+Health: Critical. Real-time protection is OFF; Behavior monitoring is off;
+Scanning of downloaded files and attachments is off; On-access protection is
+off; Tamper protection is OFF.
+
+AMServiceEnabled          True
+AntivirusEnabled          True
+RealTimeProtectionEnabled False
+BehaviorMonitorEnabled    False
+IoavProtectionEnabled     False
+OnAccessProtectionEnabled False
+IsTamperProtected         False
+AMRunningMode             Normal
+```
+
+One check took 907 ms (median of 3; the first, cold, took 4.6 s). The recorded
+healthy and degraded states gave the same readouts as on Linux (Run 1).
 
 ## Run 1: Linux container
 
