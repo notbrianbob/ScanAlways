@@ -42,11 +42,9 @@ public sealed class VerificationCoordinatorTests : IDisposable
         hub.Publish("Persistence", code, AlertSeverity.Warning, "Autostart entry changed", "excerpt only", observation.Resource);
     }
 
-    private static async Task DrainAsync(PersistenceVerificationCoordinator coordinator)
-    {
-        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        await coordinator.RunAsync(stop.Token);
-    }
+    // The hub hands alerts to the coordinator synchronously, so everything raised so far is already queued.
+    private static Task DrainAsync(PersistenceVerificationCoordinator coordinator) =>
+        coordinator.ProcessQueuedAsync(CancellationToken.None);
 
     [Fact]
     public async Task NewPersistenceAlert_IsVerifiedAutomatically_StoredWithTheAlert_AndLogged()
