@@ -13,12 +13,8 @@ public enum UpdateOutcome
 }
 
 /// <summary>Stops and restarts the hub's Windows service around an install.</summary>
-public interface IHubServiceControl
+public interface IHubServiceControl : WatchLattice.Common.IServiceControl
 {
-    /// <summary>False when the service is not installed or already stopped.</summary>
-    bool IsRunning();
-    void Stop(TimeSpan timeout);
-    void Start(TimeSpan timeout);
 }
 
 /// <summary>

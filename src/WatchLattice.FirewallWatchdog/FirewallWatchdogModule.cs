@@ -21,6 +21,8 @@ public sealed class FirewallWatchdogModule : IWatchLatticeModule
 
     public bool EnabledByDefault => true;
 
+    public Type SettingsType => typeof(FirewallWatchdogOptions);
+
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
         services.AddWatchLatticeFirewallWatchdog(configuration);
 

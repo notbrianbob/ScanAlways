@@ -65,8 +65,12 @@ detection and removal, and WatchLattice adds friction and tripwires around it.
 | **Firewall Health Watchdog** ([`src/WatchLattice.FirewallWatchdog`](src/WatchLattice.FirewallWatchdog/)) | Available | Reports disabled Windows Firewall profiles, profiles that allow unsolicited inbound traffic by default, and every change to a profile's default inbound action. Optionally (off by default) reports newly introduced inbound allow rules. A separate layer from the Defender watchdog. Read-only. See its [README](src/WatchLattice.FirewallWatchdog/README.md). |
 | **Persistence & Autostart Auditor** ([`src/WatchLattice.Persistence`](src/WatchLattice.Persistence/)) | Available | Records a baseline of Run/RunOnce keys, Startup files, and visible scheduled tasks, then reports additions, changes, removals, and gaps in coverage. Read-only. See its [README](src/WatchLattice.Persistence/README.md). |
 
-The optional **Windows tray companion** shows shared alerts, recent history,
-module run states, and hub connection status. See [alerts and tray setup](docs/alerts-and-tray.md).
+The **Windows tray companion** opens the **dashboard**: hub and module status,
+alerts, the hub's recent activity, and every setting. Turning a module on or
+off or changing a setting opens an elevated settings editor through Windows'
+administrator prompt, so only an administrator can change anything; each save
+is checked, backed up, and rolled back if the hub does not keep running. See
+[the dashboard](docs/dashboard.md) and [alerts and tray setup](docs/alerts-and-tray.md).
 Every alert is also written to the Windows **Application** event log under the
 source `WatchLattice`, with a stable event ID per alert type, so Event Viewer,
 Windows Event Forwarding and SIEM agents can pick it up. See [Event Log alerts](docs/event-log.md).
@@ -92,7 +96,8 @@ ScanAlways.Protection.Service.exe  (the hub: one process, console or Windows ser
     └── Updater           ── Modules:Updater:Enabled (checks only)
 
 ScanAlways.Tray.exe (runs in the signed-in user's session)
-├── reads the hub's local alert feed and shows notifications/status
+├── reads the hub's local alert feed and activity log: notifications and the dashboard
+├── Change settings: opens its own settings editor, elevated, which runs --apply-settings
 └── Install update: starts the hub's --apply-update, elevated, on request
 ```
 
@@ -172,7 +177,9 @@ sc.exe delete "ScanAlways Protection"
 ## Configuration
 
 Everything lives in `appsettings.json` next to the executable
-([source](src/WatchLattice.Hub/appsettings.json)). Any value can also be
+([source](src/WatchLattice.Hub/appsettings.json)). On an installed copy, the
+easiest way to change it is the dashboard's settings editor
+([the dashboard](docs/dashboard.md)). Any value can also be
 overridden with an environment variable or a command-line switch, for example
 `--Modules:Canary:Enabled=false`.
 
@@ -227,7 +234,7 @@ WatchLattice.sln
 │   ├── WatchLattice.FirewallWatchdog/  # Module: Windows Firewall health watchdog
 │   ├── WatchLattice.Persistence/       # Module: persistence and autostart auditor
 │   ├── WatchLattice.Updater/           # Module + installer: update checks and verified installs
-│   └── WatchLattice.Tray/              # Windows tray notification companion
+│   └── WatchLattice.Tray/              # Windows tray companion and dashboard
 ├── tests/
 │   ├── WatchLattice.Common.Tests/
 │   ├── WatchLattice.Decoy.Tests/
@@ -243,6 +250,7 @@ WatchLattice.sln
 └── docs/
     ├── adding-a-tool.md              # How to write a new module
     ├── alerts-and-tray.md            # Shared alerts and tray deployment
+    ├── dashboard.md                  # The dashboard and its settings editor
     ├── event-log.md                  # Alerts in the Windows Event Log, with event IDs
     └── releasing.md                  # Cutting a release the updater can install
 ```
@@ -279,6 +287,7 @@ their canaries and baselines. See
 - [x] Shared alert delivery and Windows tray companion
 - [x] Alerts in the Windows Event Log with stable event IDs
 - [x] Update checks and verified, user-approved installs from GitHub Releases
+- [x] Dashboard with activity, module switches and an administrator-only settings editor
 - [ ] Code-signed releases (the release workflow and updater are ready; signing starts once the SignPath setup in [docs/code-signing.md](docs/code-signing.md) is done)
 - [x] Reproducible demos and measured overhead
 

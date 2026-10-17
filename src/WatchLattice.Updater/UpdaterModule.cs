@@ -20,6 +20,8 @@ public sealed class UpdaterModule : IWatchLatticeModule
 
     public bool EnabledByDefault => true;
 
+    public Type SettingsType => typeof(UpdaterOptions);
+
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
         services.AddWatchLatticeUpdater(configuration);
 

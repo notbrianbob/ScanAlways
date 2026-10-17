@@ -12,10 +12,10 @@ Viewer, event forwarding and SIEMs. See [Event Log alerts](event-log.md) for
 the settings and event IDs.
 
 The tray is a separate, per-user Windows application. It reads the feed, shows
-new warnings/critical alerts as notification balloons, and opens an alert window
-on double-click. That window shows recent history, selected alert details, module
-run states, and hub connection status. Closing the window keeps the tray alive;
-**Exit tray companion** stops only the companion.
+new warnings/critical alerts as notification balloons, and opens the
+[dashboard](dashboard.md) on double-click: module status, alert history and
+details, the hub's recent activity, and its settings. Closing the window keeps
+the tray alive; **Exit tray companion** stops only the companion.
 
 ## Quick start on Windows
 
@@ -67,9 +67,10 @@ Run only one hub writer per feed and baseline path. Multiple companions can
 read the feed, but each Windows session permits one tray instance per path.
 There is no network listener and no tray-to-service control channel. The tray
 renders alert text only; it does not execute paths or commands found in alerts.
-The two things it can open are an update's release page, only when it is an
-https link on github.com, and the hub's own updater (see below), which it
-finds next to its own folder rather than in the feed.
+The things it can open are an update's release page, only when it is an
+https link on github.com, the hub's own updater (see below), and its own
+elevated settings editor ([the dashboard](dashboard.md#changing-settings-needs-an-administrator)).
+It finds the hub next to its own folder, never through the feed.
 
 ## LocalSystem service with a user tray
 
@@ -110,7 +111,7 @@ read-only to the auditor; it only writes its own baseline and shared feed.
 
 When the hub's update checker finds a newer release, the tray shows one
 notification for that version, an **Update available** entry in its menu, and a
-banner at the top of the alerts window with **Install update** and **Release
+banner at the top of the dashboard with **Install update** and **Release
 notes**. Nothing is downloaded until you choose Install update. The tray then
 asks for confirmation and starts `..\Hub\ScanAlways.Protection.Service.exe
 --apply-update` through Windows' administrator prompt. The updater re-checks

@@ -32,6 +32,7 @@ public sealed class CanaryModule : IWatchLatticeModule
     public string DisplayName => "Canary File Watcher";
     public string Description => "Plants decoy files and alerts when anything touches them.";
     public bool EnabledByDefault => true;
+    public Type SettingsType => typeof(CanaryOptions);  // the dashboard's settings page
 
     // AddWatchLatticeCanary binds CanaryOptions from the "Canary" section and
     // registers CanaryWatcher.
@@ -50,6 +51,7 @@ What the hub guarantees, and what it expects back:
 | `Id` | Stable and unique (case-insensitive). Letters, digits, `-`, `_`, starting with a letter. Used as the config key `Modules:<Id>:Enabled`, so **never rename it once shipped**. |
 | `DisplayName`, `Description` | Shown in logs and by `--list-modules`. |
 | `EnabledByDefault` | Used when the config does not set `Modules:<Id>:Enabled`. Default to `true` only for modules that are safe and cheap for everyone. |
+| `SettingsType` | Optional. The options class your `"<Id>"` section binds to. The dashboard builds the module's settings page from its public settable properties (`bool`, whole numbers, numbers, `string`, `string[]`/`List<string>`, enums, and nullable versions of those), shows each one's built-in default, and checks edits against it before saving. Add a `SettingsSchemaTests` like the existing modules' so the shipped `appsettings.json` keeps passing. |
 | `ConfigureServices` | Called once at startup, **only if the module is enabled**. Register your services and bind your options here. Keep your settings in a top-level section named after the module (for example `"Canary": { ... }`). |
 | `RunAsync` | Runs until the token is cancelled. Await rather than block. Returning early means "finished" and the module is not restarted. Throwing means "failed": the hub logs it and, if `Hub:RestartFailedModules` is on, restarts it with exponential back-off. A failing module never affects the others. |
 
