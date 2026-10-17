@@ -80,14 +80,27 @@ public sealed class PersistenceVerificationCoordinator : IAlertSink, IChangeEvid
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        var problem = _store.Load();
-        if (problem is not null) Publish(StoreFailedCode, AlertSeverity.Warning, "Verification findings need attention", problem, _store.FilePath);
+        LoadStore();
         try
         {
             await foreach (var record in _queue.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
                 await ProcessAsync(record, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    /// <summary>For tests: loads the store like <see cref="RunAsync"/>, processes every queued record to completion, then returns.</summary>
+    public async Task ProcessQueuedAsync(CancellationToken cancellationToken)
+    {
+        LoadStore();
+        while (_queue.Reader.TryRead(out var record))
+            await ProcessAsync(record, cancellationToken).ConfigureAwait(false);
+    }
+
+    private void LoadStore()
+    {
+        var problem = _store.Load();
+        if (problem is not null) Publish(StoreFailedCode, AlertSeverity.Warning, "Verification findings need attention", problem, _store.FilePath);
     }
 
     /// <summary>Stores the alert's record and, if enabled, verifies it. Public for tests.</summary>
