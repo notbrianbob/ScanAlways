@@ -9,7 +9,7 @@ namespace ScanAlways.DefenderWatchdog.Tests;
 public class DefenderSettingsTests : IDisposable
 {
     private const string AsrRule = "56a863a9-875e-4185-98a7-b882c64b5ce5";
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), $"scanalways-defender-{Guid.NewGuid():N}");
+    private readonly string _dir = Path.Join(Path.GetTempPath(), $"scanalways-defender-{Guid.NewGuid():N}");
     private readonly FakeProvider _provider = new();
 
     private static DefenderExclusion PathExclusion(string value) => new(DefenderExclusionKinds.Path, value);
@@ -33,8 +33,8 @@ public class DefenderSettingsTests : IDisposable
 
     private DefenderWatchdogOptions WatchdogOptions() => new()
     {
-        AlertLogPath = Path.Combine(_dir, "watchdog.log"),
-        StatePath = Path.Combine(_dir, "state.json"),
+        AlertLogPath = Path.Join(_dir, "watchdog.log"),
+        StatePath = Path.Join(_dir, "state.json"),
     };
 
     private DefenderWatchdog Create(IAlertPublisher? alerts = null) => new(
@@ -352,7 +352,7 @@ public class DefenderSettingsTests : IDisposable
     public async Task CorruptState_IsReportedOnce_AndANewBaselineRecorded()
     {
         Directory.CreateDirectory(_dir);
-        await File.WriteAllTextAsync(Path.Combine(_dir, "state.json"), "{not json");
+        await File.WriteAllTextAsync(Path.Join(_dir, "state.json"), "{not json");
         _provider.Status = WithSettings(Settings());
         using var watchdog = Create();
         var changes = new List<DefenderChange>();
@@ -402,12 +402,10 @@ public class DefenderSettingsTests : IDisposable
 
     public void Dispose()
     {
-        try
+        // Every watchdog is disposed by the end of its test, so nothing holds these files open.
+        if (Directory.Exists(_dir))
         {
             Directory.Delete(_dir, recursive: true);
-        }
-        catch (Exception ex) when (ex is IOException or DirectoryNotFoundException or UnauthorizedAccessException)
-        {
         }
     }
 

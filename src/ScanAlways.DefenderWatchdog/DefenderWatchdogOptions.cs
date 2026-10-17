@@ -63,6 +63,6 @@ public sealed class DefenderWatchdogOptions
         {
             root = Path.GetTempPath();
         }
-        return Path.Combine(root, "ScanAlways", fileName);
+        return Path.Join(root, "ScanAlways", fileName);
     }
 }
