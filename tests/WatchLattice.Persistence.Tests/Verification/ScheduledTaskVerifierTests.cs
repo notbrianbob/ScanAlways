@@ -418,13 +418,16 @@ public sealed class ScheduledTaskVerifierTests
     [Fact]
     public async Task VerificationTimeout_IsRecorded_AsNeedsReview()
     {
+        // The read stays stuck until the engine has given up, however late its timer fires on a busy runner.
+        var release = new TaskCompletionSource();
         _machine.Tasks.Override = _ =>
         {
-            Thread.Sleep(2000);
+            release.Task.Wait(TimeSpan.FromSeconds(30));
             return new(TaskReadStatus.NotFound);
         };
 
         var run = await _machine.Engine(TimeSpan.FromMilliseconds(100)).VerifyAsync(TriggerTimeChanged(), VerificationTrigger.Automatic, default);
+        release.SetResult();
 
         Assert.Equal(VerificationOutcome.NeedsReview, run.Outcome);
         Assert.Contains(run.Errors, e => e.Contains("did not finish"));
