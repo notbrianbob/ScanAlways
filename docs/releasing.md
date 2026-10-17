@@ -21,6 +21,10 @@ not from files uploaded by hand.
      (`Install.cmd`, `install.ps1`, `uninstall.ps1`), `LICENSE` and `README.md`
    - `SHA256SUMS.txt`, which the updater checks before installing anything
    - a build provenance attestation for the zip
+
+   When the SignPath secrets are set, the executables and DLLs are
+   Authenticode-signed before zipping; otherwise the run logs that the
+   release is unsigned. See [code signing](code-signing.md).
 4. Edit the generated release notes if needed. Do not replace or re-upload
    assets: the checksum file would no longer match, and installs of that
    release would be refused (which is the point).

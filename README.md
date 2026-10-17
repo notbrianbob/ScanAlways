@@ -274,7 +274,7 @@ their canaries and baselines. See
 - [x] Persistence and autostart auditor
 - [x] Shared alert delivery and Windows tray companion
 - [x] Update checks and verified, user-approved installs from GitHub Releases
-- [ ] Code-signed releases
+- [ ] Code-signed releases (the release workflow and updater are ready; signing starts once the SignPath setup in [docs/code-signing.md](docs/code-signing.md) is done)
 - [x] Reproducible demos and measured overhead
 
 ## Contributing and security

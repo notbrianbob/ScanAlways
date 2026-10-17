@@ -14,10 +14,12 @@ public class UpdateApplierTests
         public FakeReleaseSource Source { get; } = new();
         public FakeServiceControl Service { get; } = new() { Running = true };
         public List<string> Log { get; } = new();
-        public byte[] Package { get; } = Releases.Package("v0.2.0");
+        public FakeSignatureVerifier? Signatures { get; set; }
+        public byte[] Package { get; }
 
-        public Setup()
+        public Setup(byte[]? package = null)
         {
+            Package = package ?? Releases.Package("v0.2.0");
             Source.Next = () => Releases.Make("0.2.0");
             Http.Add(Releases.DownloadUrl("0.2.0", PackageName), Package);
             Http.Add(Releases.DownloadUrl("0.2.0", "SHA256SUMS.txt"), $"{Releases.Sha256(Package)}  {PackageName}\n");
@@ -30,7 +32,7 @@ public class UpdateApplierTests
         public string TrayDir => Temp.Combine("Tray");
 
         public Task<UpdateOutcome> RunAsync(ReleaseVersion? current = null, string? tray = "") =>
-            new UpdateApplier(Source, new HttpClient(Http), new UpdaterOptions(), Service, Log.Add)
+            new UpdateApplier(Source, new HttpClient(Http), new UpdaterOptions(), Service, Log.Add, Signatures)
                 .ApplyAsync(current ?? Current, HubDir, tray == "" ? TrayDir : tray, default);
 
         public string Read(params string[] parts) => File.ReadAllText(Temp.Combine(parts));
@@ -137,5 +139,125 @@ public class UpdateApplierTests
 
         Assert.Equal(UpdateOutcome.Installed, await setup.RunAsync());
         Assert.Empty(setup.Service.Calls);
+    }
+
+    private static readonly FileSignature Ours = new(SignatureStatus.Valid, "CN=WatchLattice (SignPath Foundation)");
+    private static readonly FileSignature Microsoft = new(SignatureStatus.Valid, "CN=Microsoft Corporation");
+
+    [Fact]
+    public async Task Apply_InstallsAnUnsignedRelease_OverAnUnsignedInstall()
+    {
+        using var setup = new Setup { Signatures = new FakeSignatureVerifier() };
+
+        Assert.Equal(UpdateOutcome.Installed, await setup.RunAsync());
+        Assert.Contains(setup.Log, line => line.Contains("not code-signed"));
+        Assert.Contains("WatchLattice.Common.dll", setup.Signatures.Checked);
+        Assert.DoesNotContain("appsettings.json", setup.Signatures.Checked);
+    }
+
+    [Fact]
+    public async Task Apply_InstallsASignedRelease_OverAnUnsignedInstall()
+    {
+        using var setup = new Setup { Signatures = new FakeSignatureVerifier { Staged = _ => Ours } };
+
+        Assert.Equal(UpdateOutcome.Installed, await setup.RunAsync());
+        Assert.Contains(setup.Log, line => line.Contains("code-signed by " + Ours.Publisher));
+    }
+
+    [Fact]
+    public async Task Apply_InstallsARelease_SignedByTheSamePublisherAsTheInstall()
+    {
+        using var setup = new Setup(Releases.Package("v0.2.0", new Dictionary<string, string> { ["Hub/Microsoft.Extensions.Hosting.dll"] = "ms" }))
+        {
+            Signatures = new FakeSignatureVerifier
+            {
+                Installed = Ours,
+                Staged = name => name.StartsWith("Microsoft.") ? Microsoft : Ours,
+            },
+        };
+
+        Assert.Equal(UpdateOutcome.Installed, await setup.RunAsync());
+        Assert.Equal("hub v0.2.0", setup.Read("Hub", "ScanAlways.Protection.Service.exe"));
+    }
+
+    [Fact]
+    public async Task Apply_RefusesAnUnsignedRelease_OverASignedInstall()
+    {
+        using var setup = new Setup { Signatures = new FakeSignatureVerifier { Installed = Ours } };
+
+        Assert.Equal(UpdateOutcome.VerificationFailed, await setup.RunAsync());
+        AssertNothingChanged(setup);
+        Assert.Contains(setup.Log, line => line.Contains("is not signed, but the installed WatchLattice is signed by"));
+    }
+
+    [Fact]
+    public async Task Apply_RefusesAnUnsignedFile_InAnOtherwiseSignedRelease()
+    {
+        using var setup = new Setup
+        {
+            Signatures = new FakeSignatureVerifier
+            {
+                Installed = Ours,
+                Staged = name => name == "ScanAlways.Tray.exe" ? FileSignature.NotSigned : Ours,
+            },
+        };
+
+        Assert.Equal(UpdateOutcome.VerificationFailed, await setup.RunAsync());
+        AssertNothingChanged(setup);
+    }
+
+    [Fact]
+    public async Task Apply_RefusesARelease_SignedByADifferentPublisher()
+    {
+        using var setup = new Setup
+        {
+            Signatures = new FakeSignatureVerifier
+            {
+                Installed = Ours,
+                Staged = _ => new FileSignature(SignatureStatus.Valid, "CN=Someone Else"),
+            },
+        };
+
+        Assert.Equal(UpdateOutcome.VerificationFailed, await setup.RunAsync());
+        AssertNothingChanged(setup);
+        Assert.Contains(setup.Log, line => line.Contains("CN=Someone Else"));
+    }
+
+    [Fact]
+    public async Task Apply_RefusesAnInvalidSignature_EvenOverAnUnsignedInstall()
+    {
+        using var setup = new Setup
+        {
+            Signatures = new FakeSignatureVerifier
+            {
+                Staged = name => name == "WatchLattice.Common.dll"
+                    ? new FileSignature(SignatureStatus.Invalid, Problem: "The digital signature of the object did not verify.")
+                    : Ours,
+            },
+        };
+
+        Assert.Equal(UpdateOutcome.VerificationFailed, await setup.RunAsync());
+        AssertNothingChanged(setup);
+        Assert.Contains(setup.Log, line => line.Contains("WatchLattice.Common.dll has an invalid signature"));
+    }
+
+    [Fact]
+    public async Task Apply_TreatsAnInvalidInstalledSignature_AsUnsigned()
+    {
+        using var setup = new Setup
+        {
+            Signatures = new FakeSignatureVerifier { Installed = new FileSignature(SignatureStatus.Invalid, Problem: "revoked") },
+        };
+
+        Assert.Equal(UpdateOutcome.Installed, await setup.RunAsync());
+        Assert.Contains(setup.Log, line => line.StartsWith("Warning: the installed"));
+    }
+
+    private static void AssertNothingChanged(Setup setup)
+    {
+        Assert.Equal("hub old", setup.Read("Hub", "ScanAlways.Protection.Service.exe"));
+        Assert.Equal("tray old", setup.Read("Tray", "ScanAlways.Tray.exe"));
+        Assert.Empty(setup.Service.Calls);
+        Assert.Empty(Directory.GetDirectories(setup.HubDir, UpdateApplier.StagingPrefix + "*"));
     }
 }
