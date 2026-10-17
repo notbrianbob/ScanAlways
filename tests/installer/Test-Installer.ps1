@@ -108,7 +108,7 @@ Set-ItemProperty -LiteralPath $tampered -Name Attributes -Value Normal
 $code = Invoke-Script (Join-Path $InstallDir 'uninstall.ps1') @('-Quiet')
 Check 'uninstall.ps1 exits 0' ($code -eq 0)
 Check 'service is gone' (Wait-Until { -not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) })
-Check 'intact canaries are removed' ((Get-Canaries $canaryFolder | Where-Object { $_.FullName -ne $tampered }).Count -eq 0)
+Check 'intact canaries are removed' (@(Get-Canaries $canaryFolder | Where-Object { $_.FullName -ne $tampered }).Count -eq 0)
 Check 'the changed canary is kept as evidence' (Test-Path -LiteralPath $tampered)
 Check 'the user''s own file is untouched' ((Get-Content -LiteralPath (Join-Path $canaryFolder 'keep-real-document.txt')) -eq 'a file the user owns')
 Check 'install folder is gone' (-not (Test-Path -LiteralPath $InstallDir))
