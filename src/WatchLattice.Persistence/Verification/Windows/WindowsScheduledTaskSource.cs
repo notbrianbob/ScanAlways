@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -26,11 +28,11 @@ public sealed class WindowsScheduledTaskSource : IScheduledTaskSource
         {
             var type = Type.GetTypeFromCLSID(TaskSchedulerClsid, throwOnError: true)!;
             service = Activator.CreateInstance(type)!;
-            dynamic scheduler = service;
-            scheduler.Connect();
-            folder = scheduler.GetFolder(folderPath);
-            task = ((dynamic)folder).GetTask(name);
-            string xml = ((dynamic)task).Xml;
+            // Late-bound IDispatch calls; Connect's four optional arguments are left unset (this machine, this account).
+            Invoke(service, "Connect", BindingFlags.InvokeMethod, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            folder = Invoke(service, "GetFolder", BindingFlags.InvokeMethod, folderPath);
+            task = Invoke(folder!, "GetTask", BindingFlags.InvokeMethod, name);
+            var xml = Invoke(task!, "Xml", BindingFlags.GetProperty) as string;
             return string.IsNullOrEmpty(xml) ? new(TaskReadStatus.Error, Error: "The Task Scheduler returned an empty definition.") : new(TaskReadStatus.Found, xml);
         }
         catch (Exception ex) when (HResult(ex) is FileNotFound or PathNotFound)
@@ -41,17 +43,20 @@ public sealed class WindowsScheduledTaskSource : IScheduledTaskSource
         {
             return new(TaskReadStatus.AccessDenied, Error: "Access denied.");
         }
-        catch (Exception ex) when (ex is COMException or InvalidCastException or Microsoft.CSharp.RuntimeBinder.RuntimeBinderException
-            or System.Reflection.TargetInvocationException or InvalidComObjectException)
+        catch (Exception ex) when (ex is COMException or InvalidCastException or MissingMethodException
+            or TargetInvocationException or InvalidComObjectException)
         {
             return new(TaskReadStatus.Error, Error: $"{(ex.InnerException ?? ex).Message} (0x{HResult(ex):X8})");
         }
         finally
         {
-            foreach (var com in new[] { task, folder, service })
-                if (com is not null && Marshal.IsComObject(com)) Marshal.FinalReleaseComObject(com);
+            foreach (var com in new[] { task, folder, service }.Where(c => c is not null && Marshal.IsComObject(c)))
+                Marshal.FinalReleaseComObject(com!);
         }
     }
 
-    private static int HResult(Exception ex) => ex is System.Reflection.TargetInvocationException { InnerException: { } inner } ? inner.HResult : ex.HResult;
+    private static object? Invoke(object target, string member, BindingFlags kind, params object?[] arguments) =>
+        target.GetType().InvokeMember(member, kind, binder: null, target, arguments, CultureInfo.InvariantCulture);
+
+    private static int HResult(Exception ex) => ex is TargetInvocationException { InnerException: { } inner } ? inner.HResult : ex.HResult;
 }

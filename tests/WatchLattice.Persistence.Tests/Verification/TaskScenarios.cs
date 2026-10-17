@@ -51,16 +51,16 @@ internal sealed class TaskScenarios
     public static string ComHandlerProjection(string clsid, string start, string user = "NETWORK SERVICE", string runLevel = "Limited", bool enabled = true) =>
         JsonSerializer.Serialize(new
         {
-            Enabled = enabled, UserId = user, GroupId = (string?)null, RunLevel = runLevel, LogonType = "ServiceAccount",
-            Actions = new[] { new { Execute = (string?)null, Arguments = (string?)null, WorkingDirectory = (string?)null, ClassId = clsid, Data = "timer" } },
-            Triggers = new[] { new { Type = "MSFT_TaskTimeTrigger", Enabled = true, StartBoundary = start, EndBoundary = (string?)null } },
+            Enabled = enabled, UserId = user, GroupId = default(string), RunLevel = runLevel, LogonType = "ServiceAccount",
+            Actions = new[] { new { Execute = default(string), Arguments = default(string), WorkingDirectory = default(string), ClassId = clsid, Data = "timer" } },
+            Triggers = new[] { new { Type = "MSFT_TaskTimeTrigger", Enabled = true, StartBoundary = start, EndBoundary = default(string) } },
         });
 
     public static string ExecProjection(string execute, string? arguments, string start = "2026-10-17T09:00:00", string user = "SYSTEM") =>
         JsonSerializer.Serialize(new
         {
-            Enabled = true, UserId = user, GroupId = (string?)null, RunLevel = "Highest", LogonType = "ServiceAccount",
-            Actions = new[] { new { Execute = execute, Arguments = arguments, WorkingDirectory = (string?)null, ClassId = (string?)null, Data = (string?)null } },
+            Enabled = true, UserId = user, GroupId = default(string), RunLevel = "Highest", LogonType = "ServiceAccount",
+            Actions = new[] { new { Execute = execute, Arguments = arguments, WorkingDirectory = default(string), ClassId = default(string), Data = default(string) } },
             Triggers = new[] { new { Type = "MSFT_TaskDailyTrigger", Enabled = true, StartBoundary = start } },
         });
 
