@@ -35,6 +35,7 @@ internal sealed class DashboardWindow : Form
     // Activity
     private readonly ListView _activity = NewList("Hub activity");
     private readonly TextBox _activityDetails = NewDetails("Selected activity details", "Select a line to see all of it.");
+    private readonly Label _activityLevelLabel = new() { Text = "Show:", AutoSize = true, Margin = new Padding(0, 7, 4, 0) };
     private readonly ComboBox _activityLevel = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 170 };
     private readonly TextBox _activitySearch = new() { Width = 260, PlaceholderText = "Filter by text", AccessibleName = "Filter activity" };
     private readonly Label _activityCount = new() { AutoSize = true, Margin = new Padding(12, 7, 0, 0) };
@@ -163,7 +164,7 @@ internal sealed class DashboardWindow : Form
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6), WrapContents = true };
         bar.Controls.AddRange(new Control[]
         {
-            new Label { Text = "Show:", AutoSize = true, Margin = new Padding(0, 7, 4, 0) }, _activityLevel, _activitySearch, _activityCount,
+            _activityLevelLabel, _activityLevel, _activitySearch, _activityCount,
         });
         var page = new TabPage("Activity");
         page.Controls.Add(Split(_activity, _activityDetails));

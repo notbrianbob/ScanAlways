@@ -84,7 +84,7 @@ public static class SettingsValidator
                 return value is JsonValue v && (v.TryGetValue<bool>(out _) || v.TryGetValue<string>(out var s) && bool.TryParse(s, out _))
                     ? null : "must be true or false.";
             case SettingKind.Integer:
-                return Number(value) is { } whole && whole >= 0 && whole == Math.Floor(whole) && whole <= long.MaxValue
+                return Number(value) is { } whole && whole >= 0 && double.IsInteger(whole) && whole <= long.MaxValue
                     ? null : "must be a whole number, 0 or more.";
             case SettingKind.Number:
                 return Number(value) is { } number && number >= 0 && double.IsFinite(number) ? null : "must be a number, 0 or more.";
