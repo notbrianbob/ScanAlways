@@ -69,6 +69,10 @@ finds next to its own folder rather than in the feed.
 
 ## LocalSystem service with a user tray
 
+The [installer](installing.md) in each release sets all of this up for you:
+the feed folder, its permissions, the feed path in the hub's settings and the
+tray's `--feed` argument. The steps below are for a manual setup.
+
 The simplest setup uses the same account for the hub and tray. If the hub runs
 as LocalSystem, its default LocalAppData is not the signed-in user's directory.
 Use an explicit feed directory and grant that user **read**, not write, access.

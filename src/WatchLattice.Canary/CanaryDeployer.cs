@@ -105,7 +105,13 @@ public sealed class CanaryDeployer
             ? Verify(path, expected)
             : CanaryState.Missing;
 
-    /// <summary>Deletes every planted canary that is still intact.</summary>
+    /// <summary>Canaries the manifest still records as planted by this watcher.</summary>
+    public IReadOnlyList<string> PlantedFiles => _manifest.Files.Keys.Order(CanaryPaths.Comparer).ToList();
+
+    /// <summary>
+    /// Deletes every planted canary that is still intact. Changed ones stay in
+    /// place as evidence and remain in <see cref="PlantedFiles"/>.
+    /// </summary>
     public int RemoveAll()
     {
         var removed = 0;

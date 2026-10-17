@@ -7,7 +7,8 @@ const string ListModulesSwitch = "--list-modules";
 const string CheckUpdateSwitch = "--check-update";
 const string ApplyUpdateSwitch = "--apply-update";
 const string PauseOnFailureSwitch = "--pause-on-failure";
-string[] commandSwitches = { ListModulesSwitch, CheckUpdateSwitch, ApplyUpdateSwitch, PauseOnFailureSwitch };
+const string RemoveCanariesSwitch = "--remove-canaries";
+string[] commandSwitches = { ListModulesSwitch, CheckUpdateSwitch, ApplyUpdateSwitch, PauseOnFailureSwitch, RemoveCanariesSwitch };
 
 bool HasSwitch(string name) => args.Any(a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase));
 
@@ -39,6 +40,12 @@ if (HasSwitch(CheckUpdateSwitch) || HasSwitch(ApplyUpdateSwitch))
 {
     return await UpdateCommand.RunAsync(builder.Configuration, apply: HasSwitch(ApplyUpdateSwitch),
         pauseOnFailure: HasSwitch(PauseOnFailureSwitch));
+}
+
+// Used by uninstall.ps1 once the service is stopped.
+if (HasSwitch(RemoveCanariesSwitch))
+{
+    return CanaryCommand.Run(builder.Configuration);
 }
 
 // Let the same binary run as a Windows service or a plain console process.

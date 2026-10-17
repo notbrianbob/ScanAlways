@@ -140,6 +140,28 @@ public class CanaryDeployerTests
     }
 
     [Fact]
+    public void RemoveAll_LeavesTamperedCanariesListedAsPlanted()
+    {
+        using var temp = new TempFolder();
+        var options = temp.Options("a.docx", "b.docx", "c.docx");
+        new CanaryDeployer(options, NullLogger.Instance).Deploy();
+        var b = Path.Combine(temp.Watched, "b.docx");
+        var c = Path.Combine(temp.Watched, "c.docx");
+        File.SetAttributes(b, FileAttributes.Normal);
+        File.WriteAllText(b, "tampered evidence");
+        File.SetAttributes(c, FileAttributes.Normal);
+        File.Delete(c);
+
+        // A fresh deployer, as the uninstaller's --remove-canaries uses: it only knows the manifest.
+        var cleanup = new CanaryDeployer(options, NullLogger.Instance);
+        Assert.Equal(3, cleanup.PlantedFiles.Count);
+        cleanup.RemoveAll();
+
+        Assert.Equal(new[] { CanaryPaths.Normalize(b) }, cleanup.PlantedFiles);
+        Assert.Equal(new[] { CanaryPaths.Normalize(b) }, CanaryManifest.Load(options.ResolveManifestPath()).Files.Keys);
+    }
+
+    [Fact]
     public void Deploy_RemovesIntactCanariesFromFoldersNoLongerConfigured()
     {
         using var temp = new TempFolder();
