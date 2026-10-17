@@ -139,7 +139,7 @@ public sealed class UpdateApplier
 
             if (_signatures is not null)
             {
-                var problem = SignaturePolicy.Check(_signatures, Path.Combine(hubDirectory, ReleaseLayout.HubExecutable),
+                var problem = SignaturePolicy.Check(_signatures, Path.Join(hubDirectory, ReleaseLayout.HubExecutable),
                     components.Select(c => c.SourceDirectory), staging, _log);
                 if (problem is not null)
                 {

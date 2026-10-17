@@ -9,7 +9,7 @@ namespace WatchLattice.Updater.Tests;
 /// </summary>
 public class WindowsAuthenticodeVerifierTests
 {
-    private static string SignedRuntimeFile => Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "coreclr.dll");
+    private static string SignedRuntimeFile => Path.Join(RuntimeEnvironment.GetRuntimeDirectory(), "coreclr.dll");
 
     [Fact]
     public void Verify_ReportsAMicrosoftSignedFileAsValid()
