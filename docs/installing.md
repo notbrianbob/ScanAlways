@@ -65,8 +65,10 @@ Settings for an unattended install:
 | `-TrayUser 'PC\name'` | Whose tray and folders to set up. Defaults to the signed-in user. |
 | `-InstallDir` | Install somewhere else. Must be in a folder only administrators can change; the installer refuses anything else. |
 
-If Group Policy enforces an `AllSigned` execution policy, `-ExecutionPolicy
-Bypass` in Install.cmd has no effect and the script will not run.
+The installer scripts are not Authenticode-signed (release signing covers the
+binaries; see [code signing](code-signing.md)). If Group Policy enforces an
+`AllSigned` execution policy, `-ExecutionPolicy Bypass` in Install.cmd has no
+effect and the script will not run.
 
 ## Updating
 
