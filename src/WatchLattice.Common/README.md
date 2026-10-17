@@ -40,6 +40,9 @@ The first tool (the always-scanning decoy) drove the initial contents:
   callbacks run inside an alert publisher.
 - **`AlertDeliveryService`** — writes the local feed and heartbeat, restores
   history, and tolerates delivery failures independently of monitoring.
+- **`EventLogAlertService` / `AlertEventIds`** — copies each new alert to the
+  Windows Application log (source `WatchLattice`) with a stable event ID, from
+  a bounded background queue. See [Event Log alerts](../../docs/event-log.md).
 - **`AlertSnapshot` / `AlertNotificationCursor`** — shared feed format,
   freshness checks, and notification deduplication for the Windows tray.
 - **`UpdateNotice` / `IUpdateStatusPublisher`** — the update checker's result,

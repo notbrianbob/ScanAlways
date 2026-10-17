@@ -67,6 +67,9 @@ detection and removal, and WatchLattice adds friction and tripwires around it.
 
 The optional **Windows tray companion** shows shared alerts, recent history,
 module run states, and hub connection status. See [alerts and tray setup](docs/alerts-and-tray.md).
+Every alert is also written to the Windows **Application** event log under the
+source `WatchLattice`, with a stable event ID per alert type, so Event Viewer,
+Windows Event Forwarding and SIEM agents can pick it up. See [Event Log alerts](docs/event-log.md).
 
 The **Update Checker** ([`src/WatchLattice.Updater`](src/WatchLattice.Updater/)) runs
 in the hub too. It checks this repository's GitHub Releases, tells you in the
@@ -195,7 +198,7 @@ overridden with an environment variable or a command-line switch, for example
   "FirewallWatchdog": { },
   "Persistence": { },
   "Updater": { },
-  "Alerts": { "Enabled": true, "FeedPath": null, "HistoryLimit": 200 }
+  "Alerts": { "Enabled": true, "FeedPath": null, "HistoryLimit": 200, "EventLog": { "Enabled": true, "MinimumSeverity": "Info" } }
 }
 ```
 
@@ -240,6 +243,7 @@ WatchLattice.sln
 └── docs/
     ├── adding-a-tool.md              # How to write a new module
     ├── alerts-and-tray.md            # Shared alerts and tray deployment
+    ├── event-log.md                  # Alerts in the Windows Event Log, with event IDs
     └── releasing.md                  # Cutting a release the updater can install
 ```
 
@@ -273,6 +277,7 @@ their canaries and baselines. See
 - [x] Opt-in monitoring of new inbound firewall allow rules
 - [x] Persistence and autostart auditor
 - [x] Shared alert delivery and Windows tray companion
+- [x] Alerts in the Windows Event Log with stable event IDs
 - [x] Update checks and verified, user-approved installs from GitHub Releases
 - [ ] Code-signed releases (the release workflow and updater are ready; signing starts once the SignPath setup in [docs/code-signing.md](docs/code-signing.md) is done)
 - [x] Reproducible demos and measured overhead
