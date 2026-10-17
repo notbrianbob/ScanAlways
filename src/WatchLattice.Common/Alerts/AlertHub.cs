@@ -35,12 +35,8 @@ public sealed class AlertHub : IAlertPublisher, IUpdateStatusPublisher
             _revision++;
         }
 
-        // Outside the lock: sinks only queue the alert, and a faulty one must not cost the others.
-        foreach (var sink in _sinks)
-        {
-            try { sink.Accept(alert); }
-            catch (Exception) { }
-        }
+        // Outside the lock: sinks only queue the alert (see IAlertSink).
+        foreach (var sink in _sinks) sink.Accept(alert);
     }
 
     public void SetModuleState(string id, ModuleRunState state)

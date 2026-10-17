@@ -24,7 +24,7 @@ public interface IEventLogWriter
 {
     bool IsSupported { get; }
 
-    /// <summary>Makes sure the event source exists. Returns null when entries can be written, else why not.</summary>
+    /// <summary>Makes sure the event source exists. Returns null when entries can be written, else why not. Does not throw.</summary>
     string? Prepare();
 
     void Write(int eventId, EventLogLevel level, IReadOnlyList<string> data);
@@ -85,9 +85,7 @@ public sealed class EventLogAlertService : BackgroundService, IAlertSink
 
         // Registering the source can be slow; don't hold up the hub's other services while it happens.
         await Task.Yield();
-        string? problem;
-        try { problem = _writer.Prepare(); }
-        catch (Exception ex) { problem = ex.Message; }
+        var problem = _writer.Prepare();
         if (problem is not null)
         {
             Stop();
@@ -135,7 +133,8 @@ public sealed class EventLogAlertService : BackgroundService, IAlertSink
             if (_writeFailed) _logger.LogInformation("Writing alerts to the Windows Event Log recovered.");
             _writeFailed = false;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IOException
+            or UnauthorizedAccessException or System.ComponentModel.Win32Exception or System.Security.SecurityException)
         {
             if (_writeFailed) return;
             _writeFailed = true;

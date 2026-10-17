@@ -112,7 +112,7 @@ public sealed class EventLogAlertTests
     [Fact]
     public void EveryClassifiedId_IsDocumented()
     {
-        var doc = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "event-log.md"));
+        var doc = File.ReadAllText(Path.Join(RepoRoot(), "docs", "event-log.md"));
         foreach (var (module, code, id) in AlertEventIds.Classified)
         {
             Assert.Matches(new Regex($@"^\| {id} \| `{Regex.Escape(code)}` \|", RegexOptions.Multiline), doc);
@@ -267,7 +267,7 @@ public sealed class EventLogAlertTests
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "WatchLattice.sln"))) return dir.FullName;
+            if (File.Exists(Path.Join(dir.FullName, "WatchLattice.sln"))) return dir.FullName;
         }
         throw new DirectoryNotFoundException("Could not find WatchLattice.sln above the test output folder.");
     }

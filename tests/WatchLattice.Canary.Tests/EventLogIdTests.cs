@@ -8,9 +8,8 @@ public sealed class EventLogIdTests
     [Fact]
     public void EveryCanaryChange_HasItsOwnEventLogId()
     {
-        foreach (var change in Enum.GetValues<CanaryChange>())
+        foreach (var code in Enum.GetValues<CanaryChange>().Select(c => "CANARY_" + c.ToString().ToUpperInvariant()))
         {
-            var code = "CANARY_" + change.ToString().ToUpperInvariant();
             Assert.True(AlertEventIds.IsClassified("Canary", code), code);
         }
     }

@@ -87,7 +87,7 @@ public interface IAlertPublisher
 /// <summary>
 /// Receives each new alert once, after burst de-duplication. Restored history is
 /// not replayed. Called on the publisher's thread, so it must return quickly and
-/// be safe to call concurrently.
+/// be safe to call concurrently, and must not throw.
 /// </summary>
 public interface IAlertSink
 {

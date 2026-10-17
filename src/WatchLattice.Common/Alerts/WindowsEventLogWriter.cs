@@ -62,7 +62,7 @@ public sealed class WindowsEventLogWriter : IEventLogWriter
     /// </summary>
     private static string? MessageFile()
     {
-        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        var path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             "Microsoft.NET", Environment.Is64BitOperatingSystem ? "Framework64" : "Framework", "v4.0.30319", "EventLogMessages.dll");
         return File.Exists(path) ? path : null;
     }
@@ -83,6 +83,10 @@ public sealed class WindowsEventLogWriter : IEventLogWriter
             EventLog.CreateEventSource(new EventSourceCreationData(SourceName, LogName) { MessageResourceFile = MessageFile() });
         }
         catch (Exception ex) when (ex is SecurityException or UnauthorizedAccessException or InvalidOperationException
-            or IOException or ArgumentException or Win32Exception) { }
+            or IOException or ArgumentException or Win32Exception)
+        {
+            // Not fatal: entries are still written, Event Viewer just can't render their text.
+            return;
+        }
     }
 }
