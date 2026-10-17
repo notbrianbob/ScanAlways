@@ -20,11 +20,16 @@ public sealed class DecoyEngine
     private readonly DecoyOptions _options;
     private readonly ILogger<DecoyEngine> _logger;
     private readonly ScanNarrator _narrator;
+    private readonly TimeProvider _time;
 
-    public DecoyEngine(IOptions<DecoyOptions> options, ILogger<DecoyEngine> logger)
+    /// <summary>Shortest wait after a sweep that found nothing, whatever the settings say.</summary>
+    private static readonly TimeSpan EmptySweepFloor = TimeSpan.FromSeconds(1);
+
+    public DecoyEngine(IOptions<DecoyOptions> options, ILogger<DecoyEngine> logger, TimeProvider? time = null)
     {
         _options = options.Value;
         _logger = logger;
+        _time = time ?? TimeProvider.System;
         _narrator = new ScanNarrator(_options.RandomSeed);
     }
 
@@ -47,6 +52,8 @@ public sealed class DecoyEngine
         var (filesPerSecond, narrateEvery) = _options.Pace();
         var minInterval = TimeSpan.FromSeconds(1.0 / Math.Max(1, filesPerSecond));
         var narrateInterval = TimeSpan.FromSeconds(narrateEvery);
+        var minSweepInterval = TimeSpan.FromSeconds(Math.Max(0, _options.MinSweepIntervalSeconds));
+        var emptySweepInterval = minSweepInterval > EmptySweepFloor ? minSweepInterval : EmptySweepFloor;
 
         _logger.LogInformation(
             "Decoy starting: intensity={Intensity}, roots={RootCount}, cap={Cap} files/s, log={Log}",
@@ -54,11 +61,31 @@ public sealed class DecoyEngine
 
         try
         {
+            var warnedEmpty = false;
             while (!cancellationToken.IsCancellationRequested)
             {
-                await RunCycleAsync(roots, log, minInterval, narrateInterval, cancellationToken);
+                var sweepStart = _time.GetTimestamp();
+                var filesFound = await RunCycleAsync(roots, log, minInterval, narrateInterval, cancellationToken);
                 Statistics.RecordCycle();
                 Emit(log, _narrator.CycleComplete(Statistics));
+
+                // Warn once per empty spell rather than once per sweep.
+                if (filesFound == 0 && !warnedEmpty)
+                {
+                    _logger.LogWarning(
+                        "The scan roots contain no files; the decoy will look again every {Interval}.",
+                        emptySweepInterval);
+                }
+                warnedEmpty = filesFound == 0;
+
+                // A sweep over few or no files ends almost at once. Without this
+                // floor the next sweep would start immediately and spin.
+                var floor = filesFound == 0 ? emptySweepInterval : minSweepInterval;
+                var rest = floor - _time.GetElapsedTime(sweepStart);
+                if (rest > TimeSpan.Zero)
+                {
+                    await Task.Delay(rest, _time, cancellationToken);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -71,7 +98,8 @@ public sealed class DecoyEngine
             Statistics.FilesTouched, Statistics.CyclesCompleted);
     }
 
-    private async Task RunCycleAsync(
+    /// <summary>Runs one sweep and returns how many files it found.</summary>
+    private async Task<long> RunCycleAsync(
         IReadOnlyList<string> roots,
         ScanLogWriter? log,
         TimeSpan minInterval,
@@ -79,30 +107,34 @@ public sealed class DecoyEngine
         CancellationToken cancellationToken)
     {
         Emit(log, _narrator.CycleStart(roots, _options.Intensity));
-        var lastNarrate = DateTimeOffset.UtcNow;
+        var lastNarrate = _time.GetUtcNow();
         var buffer = new byte[Math.Clamp(_options.BytesReadPerFile, 4096, 1024 * 1024)];
+        long filesFound = 0;
 
         foreach (var file in FileWalker.Enumerate(roots, cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
+            filesFound++;
 
-            var start = DateTimeOffset.UtcNow;
+            var start = _time.GetUtcNow();
             TouchFile(file, buffer);
 
-            if (DateTimeOffset.UtcNow - lastNarrate >= narrateInterval)
+            if (_time.GetUtcNow() - lastNarrate >= narrateInterval)
             {
                 Emit(log, _narrator.FileLine(file));
                 Emit(log, _narrator.ProgressLine(Statistics), toLogger: false);
-                lastNarrate = DateTimeOffset.UtcNow;
+                lastNarrate = _time.GetUtcNow();
             }
 
-            var spent = DateTimeOffset.UtcNow - start;
+            var spent = _time.GetUtcNow() - start;
             var remaining = minInterval - spent;
             if (remaining > TimeSpan.Zero)
             {
-                await Task.Delay(remaining, cancellationToken);
+                await Task.Delay(remaining, _time, cancellationToken);
             }
         }
+
+        return filesFound;
     }
 
     /// <summary>Opens the file read-only, reads a prefix, hashes it, discards it.</summary>
