@@ -136,6 +136,8 @@ jobs:
       - name: Package and checksum
         shell: pwsh
         run: |
+          # The installer scripts go in after signing; the signing step only handles binaries.
+          Copy-Item installer/* $env:STAGE
           New-Item -ItemType Directory -Force dist | Out-Null
           $zip = "dist/WatchLattice-$env:RELEASE_VERSION-win-x64.zip"
           # .NET's ZipFile writes forward-slash entry names, which the updater expects.

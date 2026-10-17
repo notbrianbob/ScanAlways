@@ -51,3 +51,31 @@ jobs:
           name: test-results-${{ matrix.os }}
           path: TestResults/*.trx
           if-no-files-found: ignore
+
+  installer:
+    name: Installer (windows-latest)
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # The same layout as the release zip: Hub/, Tray/ and the installer scripts.
+      - name: Package like a release
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'package'
+          dotnet publish src/WatchLattice.Hub  -c Release -r win-x64 --self-contained false -o (Join-Path $stage 'Hub')
+          dotnet publish src/WatchLattice.Tray -c Release -r win-x64 --self-contained false -o (Join-Path $stage 'Tray')
+          Copy-Item LICENSE, README.md, installer/* $stage
+
+      # Windows PowerShell 5.1, which is what users run install.ps1 with.
+      - name: Install, reinstall and uninstall
+        shell: powershell
+        run: tests/installer/Test-Installer.ps1 -Package (Join-Path $env:RUNNER_TEMP 'package')

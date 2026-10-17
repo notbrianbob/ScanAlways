@@ -17,7 +17,8 @@ not from files uploaded by hand.
    offered to stable installs.
 3. The workflow runs the tests, publishes the hub and tray for `win-x64`
    with that version stamped in, and creates the GitHub release with:
-   - `WatchLattice-<version>-win-x64.zip`, containing `Hub/`, `Tray/`, `LICENSE` and `README.md`
+   - `WatchLattice-<version>-win-x64.zip`, containing `Hub/`, `Tray/`, the installer
+     (`Install.cmd`, `install.ps1`, `uninstall.ps1`), `LICENSE` and `README.md`
    - `SHA256SUMS.txt`, which the updater checks before installing anything
    - a build provenance attestation for the zip
 
@@ -33,21 +34,15 @@ the next hub start), and the tray shows that an update is available.
 
 ## First install from a release
 
-From an elevated PowerShell, after downloading and checking the zip:
-
-```powershell
-$expected = (Get-Content .\SHA256SUMS.txt).Split(' ')[0]
-(Get-FileHash .\WatchLattice-0.2.0-win-x64.zip -Algorithm SHA256).Hash.ToLower() -eq $expected
-Expand-Archive .\WatchLattice-0.2.0-win-x64.zip 'C:\Program Files\WatchLattice'
-sc.exe create "ScanAlways Protection" binPath= "C:\Program Files\WatchLattice\Hub\ScanAlways.Protection.Service.exe" start= auto
-sc.exe start "ScanAlways Protection"
-& 'C:\Program Files\WatchLattice\Tray\ScanAlways.Tray.exe'
-```
+The zip includes `Install.cmd`, `install.ps1` and `uninstall.ps1` (from
+[`installer/`](../installer/)). Extract it and double-click `Install.cmd`; see
+[installing WatchLattice](installing.md) for what it sets up and its options.
+CI's `Installer` job runs the same scripts against a release-shaped package on
+every pull request: install, reinstall over it, and uninstall.
 
 Keeping `Hub` and `Tray` side by side is what lets **Install update** in the
-tray update both. The hub needs the .NET 8 Runtime and the tray the .NET 8
-Desktop Runtime. See [alerts and tray setup](alerts-and-tray.md) for running
-the service as LocalSystem with a user tray.
+tray update both. The installer, its uninstaller and `install-state.json` sit
+in the install folder's root, which the updater does not touch.
 
 ## Names that must not change
 

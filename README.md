@@ -134,7 +134,14 @@ See which modules are available and whether they are enabled:
 dotnet run -c Release --project src/WatchLattice.Hub -- --list-modules
 ```
 
-### Install as a Windows service
+### Install a release
+
+Download the latest [release](https://github.com/notbrianbob/WatchLattice/releases)
+zip, extract it, and double-click **Install.cmd**. It installs the hub as a
+service, starts the tray at sign-in, asks which folders to protect, and adds
+an uninstaller under Settings > Apps. See [installing WatchLattice](docs/installing.md).
+
+### Install as a Windows service from source
 
 From an elevated PowerShell:
 
