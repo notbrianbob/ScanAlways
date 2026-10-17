@@ -21,6 +21,8 @@ public sealed class DefenderWatchdogModule : IWatchLatticeModule
 
     public bool EnabledByDefault => true;
 
+    public Type SettingsType => typeof(DefenderWatchdogOptions);
+
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
         services.AddWatchLatticeDefenderWatchdog(configuration);
 

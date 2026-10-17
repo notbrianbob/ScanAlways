@@ -99,6 +99,34 @@ Check 'reinstall keeps the user''s settings' ((Get-Content -Raw -LiteralPath "$I
 Check 'reinstall writes the release defaults alongside' (Test-Path -LiteralPath "$InstallDir\Hub\appsettings.json.default")
 Check 'service is running again' (Wait-Until { (Get-Service -Name $ServiceName).Status -eq 'Running' })
 
+Write-Host '== Dashboard settings and activity'
+$hubExe = "$InstallDir\Hub\ScanAlways.Protection.Service.exe"
+$settingsPath = "$InstallDir\Hub\appsettings.json"
+Check 'hub writes its activity next to the feed' (Wait-Until { Test-Path -LiteralPath "$FeedDir\alerts.json.activity.json" })
+$described = & $hubExe --describe-settings | Out-String
+Check 'describe-settings exits 0' ($LASTEXITCODE -eq 0)
+$description = $described | ConvertFrom-Json
+Check 'describe-settings lists the module switches' (@($description.sections | Where-Object { $_.path -eq 'Modules' }).Count -eq 1)
+
+$config = Get-Content -Raw -LiteralPath $settingsPath | ConvertFrom-Json
+$config.Canary.IntegrityCheckSeconds = 90
+# Windows PowerShell writes UTF-8 with a byte order mark, as Notepad can; the hub must accept it.
+ConvertTo-Json -InputObject $config -Depth 32 | Set-Content -Encoding UTF8 -LiteralPath "$settingsPath.pending"
+& $hubExe --apply-settings | Out-Host
+Check 'apply-settings saves a valid change' ($LASTEXITCODE -eq 0)
+Check 'the change is in appsettings.json' ((Get-Content -Raw -LiteralPath $settingsPath | ConvertFrom-Json).Canary.IntegrityCheckSeconds -eq 90)
+Check 'the previous settings are backed up' (@(Get-ChildItem -LiteralPath "$InstallDir\Hub\settings-backups" -Filter 'appsettings-*.json').Count -eq 1)
+Check 'the staged file is removed' (-not (Test-Path -LiteralPath "$settingsPath.pending"))
+Check 'service is running with the new settings' (Wait-Until { (Get-Service -Name $ServiceName).Status -eq 'Running' })
+
+$before = Get-Content -Raw -LiteralPath $settingsPath
+$config = $before | ConvertFrom-Json
+$config.Updater.Repository = 'someone-else/WatchLattice'
+ConvertTo-Json -InputObject $config -Depth 32 | Set-Content -Encoding UTF8 -LiteralPath "$settingsPath.pending"
+& $hubExe --apply-settings | Out-Host
+Check 'apply-settings refuses to change the update source' ($LASTEXITCODE -eq 21)
+Check 'a refused change leaves appsettings.json alone' ((Get-Content -Raw -LiteralPath $settingsPath) -eq $before)
+
 Write-Host '== Uninstall'
 # Change one canary while the hub is stopped, so the watcher does not react
 # to it first: uninstall must keep it and remove the rest.

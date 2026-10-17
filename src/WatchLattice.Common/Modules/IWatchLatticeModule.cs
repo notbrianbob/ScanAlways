@@ -34,6 +34,14 @@ public interface IWatchLatticeModule
     bool EnabledByDefault { get; }
 
     /// <summary>
+    /// The options class bound from the module's top-level config section,
+    /// which is named after <see cref="Id"/>. The dashboard's settings editor
+    /// builds its fields from this type's public properties, and saving checks
+    /// edits against it. Null when the module has no settings.
+    /// </summary>
+    Type? SettingsType => null;
+
+    /// <summary>
     /// Registers the module's services and binds its options. Called once at
     /// startup, and only for enabled modules.
     /// </summary>

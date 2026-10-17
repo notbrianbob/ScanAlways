@@ -21,6 +21,8 @@ public sealed class CanaryModule : IWatchLatticeModule
 
     public bool EnabledByDefault => true;
 
+    public Type SettingsType => typeof(CanaryOptions);
+
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
         services.AddWatchLatticeCanary(configuration);
 

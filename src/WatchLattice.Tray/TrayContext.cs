@@ -1,16 +1,18 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
+using WatchLattice.Common.Activity;
 using WatchLattice.Common.Alerts;
 using WatchLattice.Updater;
 
 namespace WatchLattice.Tray;
 
 /// <summary>
-/// A per-user reader: the tray cannot change the hub's configuration. The one
-/// thing it can start is the hub's own updater, from the hub folder installed
-/// next to it (never a path from the feed), elevated through Windows' consent
-/// prompt and only when the user chooses Install update.
+/// A per-user reader: the tray itself cannot change the hub's configuration.
+/// It can start two things, both from the folders installed next to it (never
+/// a path from the feed) and both elevated through Windows' consent prompt:
+/// the hub's own updater when the user chooses Install update, and its own
+/// settings editor when the user chooses to change a setting.
 /// </summary>
 internal sealed class TrayContext : ApplicationContext
 {
@@ -23,7 +25,8 @@ internal sealed class TrayContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 2000 };
     private readonly AlertNotificationCursor _cursor = new();
     private AlertSnapshot? _snapshot;
-    private AlertWindow? _window;
+    private DashboardWindow? _window;
+    private DateTime _activityStamp;
     private string _statusText = "Waiting for the hub's alert feed.";
     private string? _announcedUpdate;
     private bool _reading;
@@ -36,12 +39,12 @@ internal sealed class TrayContext : ApplicationContext
         _update.Click += (_, _) => OpenWindow();
         _menu.Items.Add(_status);
         _menu.Items.Add(_update);
-        _menu.Items.Add("Open alerts and status", null, (_, _) => OpenWindow());
+        _menu.Items.Add("Open dashboard", null, (_, _) => OpenWindow());
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add("Exit tray companion", null, (_, _) => ExitThread());
         _icon = new NotifyIcon { Icon = SystemIcons.Shield, Text = "WatchLattice: waiting for hub", ContextMenuStrip = _menu, Visible = true };
         _icon.DoubleClick += (_, _) => OpenWindow();
-        _icon.BalloonTipClicked += (_, _) => OpenWindow();
+        _icon.BalloonTipClicked += (_, _) => OpenWindow(alerts: true);
         _timer.Tick += async (_, _) => await PollAsync();
         _timer.Start();
     }
@@ -52,8 +55,17 @@ internal sealed class TrayContext : ApplicationContext
         _reading = true;
         try
         {
-            var snapshot = await Task.Run(() => AlertSnapshot.Read(_path));
+            var watching = _window is { IsDisposed: false, Visible: true };
+            var stamp = _activityStamp;
+            var (snapshot, activity, activityProblem, newStamp) = await Task.Run(() =>
+            {
+                var feed = AlertSnapshot.Read(_path);
+                var (lines, problem, written) = watching ? ReadActivity(stamp) : (null, null, stamp);
+                return (feed, lines, problem, written);
+            });
             if (_exiting) return;
+            _activityStamp = newStamp;
+            if (activity is not null || activityProblem is not null) _window?.UpdateActivity(activity, activityProblem);
             _snapshot = snapshot;
             var fresh = snapshot.IsFresh(DateTimeOffset.UtcNow);
             var running = snapshot.Modules.Count(m => m.State == ModuleRunState.Running);
@@ -70,7 +82,7 @@ internal sealed class TrayContext : ApplicationContext
             {
                 var mostSevere = alerts.OrderByDescending(a => a.Severity).ThenByDescending(a => a.At).First();
                 var title = alerts.Count == 1 ? mostSevere.Title : $"{alerts.Count} new WatchLattice alerts";
-                var message = alerts.Count == 1 ? mostSevere.Message : mostSevere.Title + ". Open the tray to review all new alerts.";
+                var message = alerts.Count == 1 ? mostSevere.Message : mostSevere.Title + ". Open the dashboard to review all new alerts.";
                 _icon.ShowBalloonTip(8000, Clip(title, 63), Clip(message, 240),
                     mostSevere.Severity == AlertSeverity.Critical ? ToolTipIcon.Error : ToolTipIcon.Warning);
             }
@@ -99,8 +111,8 @@ internal sealed class TrayContext : ApplicationContext
         _announcedUpdate = notice.LatestVersion;
         _icon.ShowBalloonTip(8000, Clip($"WatchLattice {notice.LatestVersion} is available", 63),
             Clip(notice.Installable
-                ? $"You have {notice.CurrentVersion}. Open the tray to install it; nothing changes until you choose to."
-                : $"You have {notice.CurrentVersion}. Open the tray for details.", 240),
+                ? $"You have {notice.CurrentVersion}. Open the dashboard to install it; nothing changes until you choose to."
+                : $"You have {notice.CurrentVersion}. Open the dashboard for details.", 240),
             ToolTipIcon.Info);
     }
 
@@ -169,18 +181,41 @@ internal sealed class TrayContext : ApplicationContext
         }
     }
 
-    private void OpenWindow()
+    /// <summary>Reads the hub's activity file when it changed since <paramref name="stamp"/>.</summary>
+    private (ActivitySnapshot? Snapshot, string? Problem, DateTime Stamp) ReadActivity(DateTime stamp)
     {
+        var path = ActivitySnapshot.PathFor(_path);
+        try
+        {
+            var written = File.GetLastWriteTimeUtc(path);
+            if (!File.Exists(path)) return (null, "The hub has not written an activity log yet.", stamp);
+            if (written == stamp) return (null, null, stamp);
+            return (ActivitySnapshot.Read(path), null, written);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException)
+        {
+            return (null, "Activity unavailable: " + ex.Message, DateTime.MinValue);
+        }
+    }
+
+    private void OpenWindow(bool alerts = false)
+    {
+        var created = false;
         if (_window is null || _window.IsDisposed)
         {
-            _window = new AlertWindow(_path);
+            _window = new DashboardWindow(_path);
             _window.InstallRequested += async () => await InstallUpdateAsync();
             _window.SetInstalling(_installing);
+            _activityStamp = DateTime.MinValue;
+            created = true;
         }
+        if (alerts) _window.ShowAlertsTab();
         UpdateWindow();
         _window.Show();
         if (_window.WindowState == FormWindowState.Minimized) _window.WindowState = FormWindowState.Normal;
         _window.Activate();
+        // Fill the Activity tab now rather than at the next poll.
+        if (created) _ = PollAsync();
     }
 
     private void UpdateWindow()

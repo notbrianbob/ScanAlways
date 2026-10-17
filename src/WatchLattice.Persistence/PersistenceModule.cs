@@ -11,6 +11,7 @@ public sealed class PersistenceModule : IWatchLatticeModule
     public string DisplayName => "Persistence & Autostart Auditor";
     public string Description => "Reports changes to Run keys, Startup folders, and visible scheduled tasks (read-only).";
     public bool EnabledByDefault => true;
+    public Type SettingsType => typeof(PersistenceOptions);
 
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {

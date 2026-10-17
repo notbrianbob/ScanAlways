@@ -8,7 +8,13 @@ const string CheckUpdateSwitch = "--check-update";
 const string ApplyUpdateSwitch = "--apply-update";
 const string PauseOnFailureSwitch = "--pause-on-failure";
 const string RemoveCanariesSwitch = "--remove-canaries";
-string[] commandSwitches = { ListModulesSwitch, CheckUpdateSwitch, ApplyUpdateSwitch, PauseOnFailureSwitch, RemoveCanariesSwitch };
+const string DescribeSettingsSwitch = "--describe-settings";
+const string ApplySettingsSwitch = "--apply-settings";
+string[] commandSwitches =
+{
+    ListModulesSwitch, CheckUpdateSwitch, ApplyUpdateSwitch, PauseOnFailureSwitch, RemoveCanariesSwitch,
+    DescribeSettingsSwitch, ApplySettingsSwitch,
+};
 
 bool HasSwitch(string name) => args.Any(a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase));
 
@@ -40,6 +46,16 @@ if (HasSwitch(CheckUpdateSwitch) || HasSwitch(ApplyUpdateSwitch))
 {
     return await UpdateCommand.RunAsync(builder.Configuration, apply: HasSwitch(ApplyUpdateSwitch),
         pauseOnFailure: HasSwitch(PauseOnFailureSwitch));
+}
+
+// Used by the dashboard: read the settings schema, or save what its editor staged.
+if (HasSwitch(DescribeSettingsSwitch))
+{
+    return SettingsCommand.Describe(catalog);
+}
+if (HasSwitch(ApplySettingsSwitch))
+{
+    return await SettingsCommand.ApplyAsync(catalog);
 }
 
 // Used by uninstall.ps1 once the service is stopped.

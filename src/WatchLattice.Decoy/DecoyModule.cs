@@ -21,6 +21,8 @@ public sealed class DecoyModule : IWatchLatticeModule
 
     public bool EnabledByDefault => true;
 
+    public Type SettingsType => typeof(DecoyOptions);
+
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
         services.AddWatchLatticeDecoy(configuration);
 

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using WatchLattice.Common.Activity;
 using WatchLattice.Common.Alerts;
 
 namespace WatchLattice.Common.Modules;
@@ -23,6 +25,8 @@ public static class HubServiceCollectionExtensions
         var enabled = catalog.ResolveEnabled(configuration);
         services.AddOptions<AlertDeliveryOptions>().Bind(configuration.GetSection("Alerts"));
         services.AddSingleton<AlertHub>();
+        services.AddSingleton<ActivityLog>(_ => new ActivityLog());
+        services.AddSingleton<ILoggerProvider, ActivityLoggerProvider>();
         services.AddSingleton<IAlertPublisher>(sp => sp.GetRequiredService<AlertHub>());
         services.AddSingleton<IUpdateStatusPublisher>(sp => sp.GetRequiredService<AlertHub>());
         services.AddHostedService<AlertDeliveryService>();

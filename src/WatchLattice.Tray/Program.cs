@@ -7,6 +7,9 @@ namespace WatchLattice.Tray;
 
 internal static class Program
 {
+    private const string Usage = "Usage: ScanAlways.Tray.exe [--feed <full path to alerts.json>]\n"
+        + "       ScanAlways.Tray.exe --edit-settings [--section <name>] [--toggle-module <id>]";
+
     /// <summary>Set after an update was installed, so the new tray starts once this one has exited.</summary>
     public static bool RestartRequested { get; set; }
 
@@ -14,9 +17,14 @@ internal static class Program
     private static void Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
+        if (args.Length > 0 && args[0] == "--edit-settings")
+        {
+            EditSettings(args);
+            return;
+        }
         if (args.Length != 0 && (args.Length != 2 || args[0] != "--feed"))
         {
-            MessageBox.Show("Usage: ScanAlways.Tray.exe [--feed <full path to alerts.json>]", "WatchLattice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Usage, "WatchLattice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
@@ -43,5 +51,40 @@ internal static class Program
             foreach (var arg in args) start.ArgumentList.Add(arg);
             Process.Start(start)?.Dispose();
         }
+    }
+
+    /// <summary>
+    /// The settings editor, which the dashboard starts elevated. The arguments
+    /// only choose the first page and a module switch to stage; nothing is
+    /// saved until an administrator chooses Save.
+    /// </summary>
+    private static void EditSettings(string[] args)
+    {
+        string? section = null, toggle = null;
+        for (var i = 1; i < args.Length; i += 2)
+        {
+            if (i + 1 >= args.Length || args[i] is not ("--section" or "--toggle-module"))
+            {
+                MessageBox.Show(Usage, "WatchLattice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (args[i] == "--section") section = args[i + 1];
+            else toggle = args[i + 1];
+        }
+        if (HubSettings.HubExecutable is null)
+        {
+            MessageBox.Show(HubSettings.NotInstalledMessage, "WatchLattice settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        // One editor at a time, so two saves cannot race each other.
+        using var instance = new Mutex(initiallyOwned: true, @"Local\WatchLattice.SettingsEditor", out var created);
+        if (!created)
+        {
+            MessageBox.Show("The WatchLattice settings editor is already open.", "WatchLattice settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        try { Application.Run(new SettingsEditorWindow(section, toggle)); }
+        finally { instance.ReleaseMutex(); }
     }
 }
