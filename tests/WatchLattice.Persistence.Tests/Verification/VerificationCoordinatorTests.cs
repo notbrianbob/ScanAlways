@@ -87,7 +87,7 @@ public sealed class VerificationCoordinatorTests : IDisposable
     {
         var (coordinator, hub) = Create();
         var provider = new StaticProvider();
-        var options = new PersistenceOptions { BaselinePath = Path.Combine(_directory, "baseline.json"), AutoVerifyAlerts = _options.AutoVerifyAlerts };
+        var options = new PersistenceOptions { BaselinePath = Path.Join(_directory, "baseline.json"), AutoVerifyAlerts = _options.AutoVerifyAlerts };
         var auditor = new PersistenceAuditor(provider, Options.Create(options), NullLogger<PersistenceAuditor>.Instance, hub, coordinator);
         provider.Entries = new[] { new PersistenceEntry(TaskPath, before) };
         await auditor.CheckOnceAsync(default);
