@@ -82,6 +82,93 @@ public sealed class VerificationCoordinatorTests : IDisposable
         Assert.Equal(AlertSeverity.Critical, outcome.Severity);
     }
 
+    /// <summary>Runs the real auditor against the coordinator: a baseline with <paramref name="before"/>, then one check that sees <paramref name="after"/>.</summary>
+    private async Task<ProtectionAlert[]> AuditChangeAsync(string before, string after)
+    {
+        var (coordinator, hub) = Create();
+        var provider = new StaticProvider();
+        var options = new PersistenceOptions { BaselinePath = Path.Join(_directory, "baseline.json"), AutoVerifyAlerts = _options.AutoVerifyAlerts };
+        var auditor = new PersistenceAuditor(provider, Options.Create(options), NullLogger<PersistenceAuditor>.Instance, hub, coordinator);
+        provider.Entries = new[] { new PersistenceEntry(TaskPath, before) };
+        await auditor.CheckOnceAsync(default);
+        provider.Entries = new[] { new PersistenceEntry(TaskPath, after) };
+        await auditor.CheckOnceAsync(default);
+        await DrainAsync(coordinator);
+        return hub.Snapshot().Alerts.Where(a => a.Code != "BASELINE_CREATED").OrderBy(a => a.At).ToArray();
+    }
+
+    private static string Projection(string start) => ComHandlerProjection(Clsid, start);
+
+    [Fact]
+    public async Task TimingOnlyChange_ThatPassesVerification_RaisesOnlyInformationalAlerts()
+    {
+        var alerts = await AuditChangeAsync(Projection("2026-10-17T03:12:44Z"), Projection("2026-10-18T03:12:44Z"));
+
+        var changed = Assert.Single(alerts, a => a.Code == "ENTRY_CHANGED");
+        Assert.Equal(AlertSeverity.Info, changed.Severity);
+        Assert.Contains("schedule timing only", changed.Title);
+        Assert.Contains("Previous:", changed.Message);
+        Assert.Equal(AlertSeverity.Info, Assert.Single(alerts, a => a.Code == PersistenceVerificationCoordinator.PassedCode).Severity);
+        Assert.DoesNotContain(alerts, a => a.Severity >= AlertSeverity.Warning);
+        // Downgraded, not suppressed: the change and its evidence are still recorded.
+        Assert.Single(VerificationStore.Read(StorePath));
+    }
+
+    [Fact]
+    public async Task TimingOnlyChange_ThatFailsVerification_StillRaisesACriticalAlert()
+    {
+        _machine.Files.Add(Dll, new SignatureEvidence(SignatureState.Invalid, SignatureKind.Catalog, Problem: "bad"));
+
+        var alerts = await AuditChangeAsync(Projection("2026-10-17T03:12:44Z"), Projection("2026-10-18T03:12:44Z"));
+
+        Assert.Equal(AlertSeverity.Info, Assert.Single(alerts, a => a.Code == "ENTRY_CHANGED").Severity);
+        Assert.Equal(AlertSeverity.Critical, Assert.Single(alerts, a => a.Code == PersistenceVerificationCoordinator.SuspiciousCode).Severity);
+    }
+
+    [Fact]
+    public async Task TimingOnlyChange_WithAutomaticVerificationOff_StaysAWarning()
+    {
+        _options.AutoVerifyAlerts = false;
+
+        var alerts = await AuditChangeAsync(Projection("2026-10-17T03:12:44Z"), Projection("2026-10-18T03:12:44Z"));
+
+        var changed = Assert.Single(alerts);
+        Assert.Equal("ENTRY_CHANGED", changed.Code);
+        Assert.Equal(AlertSeverity.Warning, changed.Severity);
+        Assert.Equal("Autostart entry changed", changed.Title);
+    }
+
+    [Fact]
+    public async Task RedirectedAction_StaysAWarning_AndVerificationRaisesACriticalAlert()
+    {
+        var alerts = await AuditChangeAsync(Projection("2026-10-17T03:12:44Z"),
+            ComHandlerProjection("{00000000-1111-2222-3333-444444444444}", "2026-10-18T03:12:44Z"));
+
+        Assert.Equal(AlertSeverity.Warning, Assert.Single(alerts, a => a.Code == "ENTRY_CHANGED").Severity);
+        Assert.Equal(AlertSeverity.Critical, Assert.Single(alerts, a => a.Code == PersistenceVerificationCoordinator.SuspiciousCode).Severity);
+    }
+
+    [Fact]
+    public async Task ChangedPrivileges_AreNeverTreatedAsTimingOnly()
+    {
+        var alerts = await AuditChangeAsync(ComHandlerProjection(Clsid, "2026-10-17T03:12:44Z"),
+            ComHandlerProjection(Clsid, "2026-10-18T03:12:44Z", runLevel: "Highest"));
+
+        Assert.Equal(AlertSeverity.Warning, Assert.Single(alerts, a => a.Code == "ENTRY_CHANGED").Severity);
+        Assert.Equal(AlertSeverity.Critical, Assert.Single(alerts, a => a.Code == PersistenceVerificationCoordinator.SuspiciousCode).Severity);
+    }
+
+    [Fact]
+    public void Stage_SaysWhetherAVerificationAlertWillFollow()
+    {
+        var (coordinator, _) = Create();
+        Assert.True(coordinator.Stage(TriggerTimeChanged().Resource, TriggerTimeChanged()));
+        var registry = new PersistenceObservation("Registry/HKLM/Registry64/Run", "App", PersistenceChangeKind.Changed, "REG_SZ: a", "REG_SZ: b", DateTimeOffset.UtcNow);
+        Assert.False(coordinator.Stage(registry.Resource, registry));
+        _options.AutoVerifyAlerts = false;
+        Assert.False(coordinator.Stage(TriggerTimeChanged().Resource, TriggerTimeChanged()));
+    }
+
     [Fact]
     public async Task WithAutomaticVerificationOff_TheEvidenceIsStillStored_ForAManualCheckLater()
     {
@@ -205,5 +292,13 @@ public sealed class VerificationCoordinatorTests : IDisposable
         private readonly Func<IAlertSink> _target;
         public Forward(Func<IAlertSink> target) => _target = target;
         public void Accept(ProtectionAlert alert) => _target().Accept(alert);
+    }
+
+    private sealed class StaticProvider : IPersistenceProvider
+    {
+        public IReadOnlyList<PersistenceEntry> Entries { get; set; } = Array.Empty<PersistenceEntry>();
+
+        public Task<IReadOnlyList<PersistenceSource>> ReadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<PersistenceSource>>(new[] { new PersistenceSource(Source, Entries) });
     }
 }

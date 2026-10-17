@@ -189,13 +189,13 @@ Standing findings have a `_CLEARED` recovery event at ID + 500.
 |---|---|---|---|
 | 5001 | `BASELINE_CREATED` | Information | First autostart baseline recorded. |
 | 5002 | `ENTRY_ADDED` | Warning | A new Run/RunOnce value, Startup file or scheduled task. |
-| 5003 | `ENTRY_CHANGED` | Warning | An existing autostart entry changed. |
+| 5003 | `ENTRY_CHANGED` | Warning or Information | An existing autostart entry changed. Information only when a scheduled task's trigger timing is all that changed and automatic verification follows; that 5010–5012 event carries the assessment. |
 | 5004 | `ENTRY_REMOVED` | Information | An autostart entry was removed. |
 | 5005 | `SOURCE_UNAVAILABLE` | Warning | An autostart location could not be read. |
 | 5006 | `SOURCE_RECOVERED` | Information | That location is readable again. |
 | 5010 | `VERIFY_PASSED` | Information | Automatic verification of a changed scheduled task: every check passed. Evidence, not proof the task is harmless. |
 | 5011 | `VERIFY_NEEDS_REVIEW` | Warning | Automatic verification: an unknown handler, unfamiliar or missing signature, missing file, or a check that could not be completed. |
-| 5012 | `VERIFY_SUSPICIOUS` | Error | Automatic verification: the program or COM class was changed, a per-user registration overrides the machine one, a signature is invalid, or the task differs from the trusted baseline. |
+| 5012 | `VERIFY_SUSPICIOUS` | Error | Automatic verification: the program or COM class was changed, the task gained highest privileges or now runs as SYSTEM or Administrators, a per-user registration overrides the machine one, a signature is invalid, or the task differs from the trusted baseline. |
 | 5013 | `VERIFICATION_STORE_FAILED` | Warning | Verification findings could not be saved, or an unreadable findings file was moved aside. |
 
 ### Updater (6000)

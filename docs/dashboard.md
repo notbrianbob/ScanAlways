@@ -123,7 +123,8 @@ checked by hand:
    administrator's password.
 6. Alerts: after Windows reschedules `SvcRestartTask` (or after
    `ENTRY_CHANGED` for any task), the alert's Verification column shows the
-   automatic outcome and a `VERIFY_*` alert follows. **Verify entry** shows
+   automatic outcome and a `VERIFY_*` alert follows. A reschedule alone shows
+   as Info, titled *schedule timing only*, with no balloon. **Verify entry** shows
    *Verifying…*, then *(manual)*, with no administrator prompt. **View
    verification details…** lists both runs; the report shows the logged change
    under *At alert time* and the DLL, hash and signer under *Current state*.
