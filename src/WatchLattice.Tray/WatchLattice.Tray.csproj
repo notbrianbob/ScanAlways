@@ -14,5 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="../WatchLattice.Common/WatchLattice.Common.csproj" />
     <ProjectReference Include="../WatchLattice.Updater/WatchLattice.Updater.csproj" />
+    <ProjectReference Include="../WatchLattice.Persistence/WatchLattice.Persistence.csproj" />
   </ItemGroup>
 </Project>

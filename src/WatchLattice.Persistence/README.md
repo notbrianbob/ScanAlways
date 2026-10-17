@@ -93,6 +93,28 @@ overwritten. Verification alerts also go to the Windows Event Log (IDs
 With `AutoVerifyAlerts` off, the original evidence is still stored, so an
 entry can be verified later.
 
+### In the dashboard
+
+The [dashboard](../../docs/dashboard.md)'s Alerts tab has a **Verification**
+column for scheduled-task alerts and their outcome alerts, and the selected
+alert's details show the latest outcome, every check that did not pass, the
+change logged with the alert and anything changed since. Two buttons work on
+the selected alert:
+
+- **Verify entry** checks the entry again now. It runs inside the dashboard,
+  as you, with your normal rights: there is no channel from the dashboard to
+  the hub, and no administrator prompt. Tasks, registry keys or files your
+  account cannot read come out as *Unknown*, so a manual run can need review
+  where the hub's run passed; the report says which account each run used.
+  Manual runs are saved in your profile, in
+  `%LOCALAPPDATA%\ScanAlways\manual-verifications.json` (with a copy of the
+  original evidence), never in the hub's file.
+- **View verification details…** (or double-clicking the alert) opens every
+  run, automatic and manual, newest first: each check with its status, the
+  overall assessment, and the full report with the evidence logged at alert
+  time and the current state in separate sections. **Verify again** and
+  **Copy report** are there too.
+
 ### What verification never does
 
 It never runs the task, activates the COM class, or loads or executes the
@@ -200,6 +222,8 @@ the module reports that limitation rather than claiming a healthy result.
   hive is loaded (signed-in users and service accounts); otherwise the check is
   inconclusive.
 - Revocation is checked only against cached revocation data.
+- Manual checks from the dashboard run with your rights, not the hub's, so
+  they may be less complete than the automatic check.
 - The trusted baseline is small. Most tasks are judged by their own history,
   signature and publisher, not against a known-good configuration.
 - Signatures are evidence of origin. Signed malware and abused Microsoft
