@@ -4,6 +4,11 @@ name: Release
 #   WatchLattice-<version>-win-x64.zip   Hub/ and Tray/, framework-dependent
 #   SHA256SUMS.txt                       checked by the in-hub updater before installing
 # plus a build provenance attestation for the zip (verify with `gh attestation verify`).
+#
+# When SignPath is configured (see docs/code-signing.md), the published
+# WatchLattice and ScanAlways executables and DLLs are Authenticode-signed
+# before they are zipped. Without the SignPath secrets the release is built
+# unsigned, exactly as before, and the log says so.
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
@@ -21,6 +26,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write      # create the release
+      actions: read        # let SignPath read this run's unsigned artifact
       id-token: write      # sign the provenance attestation
       attestations: write
 
@@ -59,12 +65,82 @@ jobs:
           dotnet publish src/WatchLattice.Tray -c Release -r win-x64 --self-contained false -p:Version=$env:RELEASE_VERSION -o (Join-Path $stage 'Tray')
           Copy-Item LICENSE, README.md $stage
           Get-ChildItem $stage -Recurse -Filter *.pdb | Remove-Item
+          "STAGE=$stage" >> $env:GITHUB_ENV
 
+      # Signing is optional so releases keep working before SignPath is set up.
+      # Once SIGNPATH_API_TOKEN and SIGNPATH_ORGANIZATION_ID exist, a release
+      # that cannot be signed fails instead of shipping unsigned.
+      - name: Check code signing configuration
+        id: signing
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+        run: |
+          if ($env:SIGNPATH_API_TOKEN -and $env:SIGNPATH_ORGANIZATION_ID) {
+            "enabled=true" >> $env:GITHUB_OUTPUT
+            Write-Host "Code signing is configured; binaries will be signed through SignPath."
+          } else {
+            "enabled=false" >> $env:GITHUB_OUTPUT
+            Write-Host "::notice title=Release is not code-signed::SIGNPATH_API_TOKEN and SIGNPATH_ORGANIZATION_ID are not both set, so signing was skipped and this release's binaries are unsigned. See docs/code-signing.md."
+          }
+
+      - name: Upload unsigned binaries for signing
+        id: unsigned
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-${{ env.RELEASE_VERSION }}
+          path: ${{ env.STAGE }}
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign with SignPath
+        if: steps.signing.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'WatchLattice' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: ${{ runner.temp }}/signed
+
+      # Swap in the signed files, then check every one of our binaries really
+      # carries a valid signature before anything is zipped or checksummed.
+      - name: Verify signatures
+        if: steps.signing.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          $signed = Join-Path $env:RUNNER_TEMP 'signed'
+          if (-not (Test-Path (Join-Path $signed 'Hub/ScanAlways.Protection.Service.exe'))) { throw "SignPath returned no Hub/ScanAlways.Protection.Service.exe." }
+          Remove-Item $env:STAGE -Recurse -Force
+          Move-Item $signed $env:STAGE
+
+          # Mirrors the updater's rule for signed installs: every .exe and .dll
+          # must carry a valid signature, and all of ours the same publisher.
+          $hub = Get-AuthenticodeSignature (Join-Path $env:STAGE 'Hub/ScanAlways.Protection.Service.exe')
+          if ($hub.Status -ne 'Valid') { throw "Hub/ScanAlways.Protection.Service.exe is not validly signed: $($hub.StatusMessage)" }
+          $publisher = $hub.SignerCertificate.Subject
+          Write-Host "Publisher: $publisher"
+          $bad = @()
+          foreach ($file in Get-ChildItem $env:STAGE -Recurse -Include *.exe, *.dll) {
+            $sig = Get-AuthenticodeSignature $file.FullName
+            $own = $file.Name -like 'WatchLattice.*' -or $file.Name -like 'ScanAlways.*'
+            Write-Host ("{0,-8} {1,-5} {2}  {3}" -f $sig.Status, $(if ($own) { 'own' } else { '' }), $file.FullName.Substring($env:STAGE.Length + 1), $sig.SignerCertificate.Subject)
+            if ($sig.Status -ne 'Valid' -or ($own -and $sig.SignerCertificate.Subject -cne $publisher)) { $bad += $file.Name }
+          }
+          if ($bad) { throw "These binaries are not validly signed by the expected publisher: $($bad -join ', ')" }
+
+      - name: Package and checksum
+        shell: pwsh
+        run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           $zip = "dist/WatchLattice-$env:RELEASE_VERSION-win-x64.zip"
           # .NET's ZipFile writes forward-slash entry names, which the updater expects.
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, (Join-Path (Resolve-Path dist).Path (Split-Path $zip -Leaf)))
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($env:STAGE, (Join-Path (Resolve-Path dist).Path (Split-Path $zip -Leaf)))
 
           $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
           Set-Content -Encoding ascii -Path dist/SHA256SUMS.txt -Value "$hash  $(Split-Path $zip -Leaf)"

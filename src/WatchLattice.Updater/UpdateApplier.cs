@@ -24,9 +24,10 @@ public interface IHubServiceControl
 /// <summary>
 /// Installs the latest release when the user asks for it: re-reads the release
 /// from GitHub (never from the alert feed), downloads the package and its
-/// SHA256SUMS.txt, verifies the hash, extracts it, stops the hub service,
-/// swaps files with rollback, and starts the service again. Any verification
-/// problem stops before a single installed file is touched.
+/// SHA256SUMS.txt, verifies the hash, extracts it, checks code signatures
+/// against the installed copy, stops the hub service, swaps files with
+/// rollback, and starts the service again. Any verification problem stops
+/// before a single installed file is touched.
 /// </summary>
 public sealed class UpdateApplier
 {
@@ -39,15 +40,18 @@ public sealed class UpdateApplier
     private readonly UpdaterOptions _options;
     private readonly IHubServiceControl? _service;
     private readonly Action<string> _log;
+    private readonly ISignatureVerifier? _signatures;
 
+    /// <param name="signatures">Checks Authenticode signatures; null skips the check (non-Windows hosts).</param>
     public UpdateApplier(IReleaseSource source, HttpClient http, UpdaterOptions options, IHubServiceControl? service,
-        Action<string> log)
+        Action<string> log, ISignatureVerifier? signatures = null)
     {
         _source = source;
         _http = http;
         _options = options;
         _service = service;
         _log = log;
+        _signatures = signatures;
     }
 
     public async Task<UpdateOutcome> ApplyAsync(ReleaseVersion current, string hubDirectory, string? trayDirectory,
@@ -132,6 +136,17 @@ public sealed class UpdateApplier
             };
             if (trayDirectory is not null)
                 components.Add(new(ReleaseLayout.TrayFolder, Path.Combine(staging, ReleaseLayout.TrayFolder), trayDirectory));
+
+            if (_signatures is not null)
+            {
+                var problem = SignaturePolicy.Check(_signatures, Path.Combine(hubDirectory, ReleaseLayout.HubExecutable),
+                    components.Select(c => c.SourceDirectory), staging, _log);
+                if (problem is not null)
+                {
+                    _log("Code signature check failed: " + problem + " Nothing was changed.");
+                    return UpdateOutcome.VerificationFailed;
+                }
+            }
 
             return Install(candidate.Version, components);
         }

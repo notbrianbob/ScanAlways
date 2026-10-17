@@ -42,7 +42,8 @@ internal static class UpdateCommand
             {
                 Console.WriteLine("WatchLattice updater");
                 IHubServiceControl? service = OperatingSystem.IsWindows() ? new WindowsHubServiceControl(ServiceName) : null;
-                var applier = new UpdateApplier(source, http, options, service, Console.WriteLine);
+                ISignatureVerifier? signatures = OperatingSystem.IsWindows() ? new WindowsAuthenticodeVerifier() : null;
+                var applier = new UpdateApplier(source, http, options, service, Console.WriteLine, signatures);
                 var hubDirectory = AppContext.BaseDirectory;
                 outcome = await applier.ApplyAsync(current, hubDirectory, ReleaseLayout.FindTrayDirectory(hubDirectory), cancel.Token);
             }
