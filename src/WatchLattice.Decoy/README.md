@@ -25,7 +25,11 @@ Under the hood it does one honest, benign thing on a loop:
    service log.
 
 Pacing is throttled hard (a configurable files-per-second cap, a per-file byte
-cap, and a max file size) so CPU and disk overhead stay modest.
+cap, a max file size, and a minimum time between sweeps) so CPU and disk
+overhead stay modest. The minimum sweep interval matters when the scan roots
+hold few or no files: without it, a sweep that finds nothing would end at once
+and the next would start immediately. If a sweep finds no files at all, the
+decoy logs one warning and then re-checks once per interval.
 
 ## Signals it emulates
 
@@ -79,6 +83,7 @@ command-line switches):
 | `MaxFilesPerSecond` | `8` | Hard cap on files opened per second. |
 | `BytesReadPerFile` | `65536` | Bytes read from the front of each file. |
 | `MaxFileSizeBytes` | `268435456` | Files larger than this are named but not read. |
+| `MinSweepIntervalSeconds` | `60` | Shortest time between the starts of two sweeps. `0` removes the floor, except that a sweep finding no files still waits 1 s. |
 | `WriteScanLog` | `true` | Write the cosmetic rolling scan log. |
 | `ScanLogPath` | `null` | Log location; `null` = `%TEMP%\ScanAlways\scan-activity.log`. |
 

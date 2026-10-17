@@ -130,6 +130,9 @@ public static class DecoyDemo
             // Above 1,000 files/s the per-file delay rounds to zero, so the
             // engine runs flat out (on its own thread, see Task.Run below).
             MaxFilesPerSecond = 100_000,
+            // The corpus is swept in well under a second at this rate; no
+            // floor between sweeps keeps the engine busy for the whole window.
+            MinSweepIntervalSeconds = 0,
             ScanRoots = new List<string> { corpusRoot },
             WriteScanLog = false,
             RandomSeed = args.Seed,

@@ -56,6 +56,16 @@ public sealed class DecoyOptions
     /// </summary>
     public long MaxFileSizeBytes { get; set; } = 256L * 1024 * 1024;
 
+    /// <summary>
+    /// Shortest time between the starts of two sweeps. A sweep over an empty or
+    /// tiny set of roots finishes almost at once; without this floor the engine
+    /// would start the next one straight away, spinning a CPU core and writing
+    /// "sweep complete" lines as fast as it can. 0 removes the floor (the demos'
+    /// flat-out cost-per-file run uses this); even then, a sweep that finds no
+    /// files waits at least a second before the next one.
+    /// </summary>
+    public int MinSweepIntervalSeconds { get; set; } = 60;
+
     /// <summary>When true, the decoy writes a rolling, scanner-style log file.</summary>
     public bool WriteScanLog { get; set; } = true;
 
