@@ -229,7 +229,7 @@ public sealed class ScheduledTaskVerifier : IEntryVerifier
         return new(index, action.Kind, action.Describe(), clsid, location, rawTarget, resolved.Path, file, notes);
     }
 
-    private static VerificationCheck LoggedChangeCheck(PersistenceObservation observation, IReadOnlyList<FieldChange> changes)
+    private VerificationCheck LoggedChangeCheck(PersistenceObservation observation, IReadOnlyList<FieldChange> changes)
     {
         const string id = "logged-change";
         const string title = "Change in the alert";
@@ -241,6 +241,10 @@ public sealed class ScheduledTaskVerifier : IEntryVerifier
         var targets = changes.Where(TaskComparison.IsTargetChange).ToArray();
         if (targets.Length > 0)
             return new(id, title, CheckStatus.Fail, "The alert changed what the task runs: " + Describe(targets) + OtherChanges(changes, targets));
+        var gains = changes.Where(c => TaskComparison.IsPrivilegeGain(c, _accounts)).ToArray();
+        if (gains.Length > 0)
+            return new(id, title, CheckStatus.Fail, "The alert gave the task more privileges (highest privileges, SYSTEM or Administrators): "
+                + Describe(gains) + OtherChanges(changes, gains));
         var actions = changes.Where(c => c.Area == ChangeArea.Action).ToArray();
         if (actions.Length > 0)
             return new(id, title, CheckStatus.Warning, "The alert changed an action's arguments or data: " + Describe(actions) + OtherChanges(changes, actions));
@@ -253,8 +257,12 @@ public sealed class ScheduledTaskVerifier : IEntryVerifier
         var other = changes.Where(c => c.Area == ChangeArea.Other).ToArray();
         if (other.Length > 0)
             return new(id, title, CheckStatus.Warning, "The alert changed fields this check does not classify: " + Describe(other));
-        return new(id, title, CheckStatus.Pass, "Only the schedule or the enabled setting changed: " + Describe(changes)
-            + ". What the task runs and the account it runs as did not change.");
+        var triggers = changes.Where(c => c.Area == ChangeArea.Schedule && !TaskComparison.IsTimingChange(c)).ToArray();
+        if (triggers.Length > 0)
+            return new(id, title, CheckStatus.Warning, "The alert changed what starts the task, not only when (a trigger added, removed, " +
+                "or changed in type, event, user or enabled state): " + Describe(triggers) + OtherChanges(changes, triggers));
+        return new(id, title, CheckStatus.Pass, "Only the schedule's timing or the enabled setting changed: " + Describe(changes)
+            + ". What the task runs, what starts it and the account it runs as did not change.");
     }
 
     private static VerificationCheck SinceAlertCheck(IReadOnlyList<FieldChange> since, IReadOnlyList<string> unresolved)

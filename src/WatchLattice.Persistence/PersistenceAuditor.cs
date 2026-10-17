@@ -86,13 +86,16 @@ public sealed class PersistenceAuditor
                     var resource = source.Id + "/" + difference.Id;
                     if (_options.IgnoredEntries.Any(pattern => FileSystemName.MatchesSimpleExpression(pattern, resource, ignoreCase: true))) continue;
                     // Hand over the complete before/after first; the alert message only carries excerpts.
-                    if (difference.Kind != PersistenceChangeKind.Removed)
-                        _evidence?.Stage(resource, new PersistenceObservation(source.Id, difference.Id, difference.Kind,
-                            difference.Before, difference.After, DateTimeOffset.UtcNow));
-                    Emit("ENTRY_" + difference.Kind.ToString().ToUpperInvariant(),
-                        difference.Kind == PersistenceChangeKind.Removed ? AlertSeverity.Info : AlertSeverity.Warning,
-                        $"Autostart entry {difference.Kind.ToString().ToLowerInvariant()}",
-                        $"{Excerpt(resource, 350)}\nPrevious: {Excerpt(difference.Before, 700)}\nCurrent: {Excerpt(difference.After, 700)}", resource);
+                    var verified = difference.Kind != PersistenceChangeKind.Removed
+                        && _evidence?.Stage(resource, new PersistenceObservation(source.Id, difference.Id, difference.Kind,
+                            difference.Before, difference.After, DateTimeOffset.UtcNow)) == true;
+                    var timingOnly = verified && IsTimingOnly(source.Id, difference);
+                    var severity = difference.Kind == PersistenceChangeKind.Removed || timingOnly ? AlertSeverity.Info : AlertSeverity.Warning;
+                    Emit("ENTRY_" + difference.Kind.ToString().ToUpperInvariant(), severity,
+                        $"Autostart entry {difference.Kind.ToString().ToLowerInvariant()}" + (timingOnly ? ": schedule timing only" : ""),
+                        $"{Excerpt(resource, 350)}\nPrevious: {Excerpt(difference.Before, 700)}\nCurrent: {Excerpt(difference.After, 700)}"
+                        + (timingOnly ? "\nOnly when the task runs changed, so this is informational. The verification alert that follows reports anything that needs attention." : ""),
+                        resource);
                 }
             }
             _baseline.Sources[source.Id] = source.Entries.ToList();
@@ -159,6 +162,16 @@ public sealed class PersistenceAuditor
         _logger.Log(severity >= AlertSeverity.Warning ? LogLevel.Warning : LogLevel.Information,
             "Persistence {Code}: {Message}", code, message);
     }
+
+    /// <summary>
+    /// A scheduled task whose logged definitions differ only in trigger timing.
+    /// Only downgraded when verification follows, so a task that fails its
+    /// checks still raises a warning or critical alert.
+    /// </summary>
+    private static bool IsTimingOnly(string sourceId, PersistenceChange difference) =>
+        difference.Kind == PersistenceChangeKind.Changed
+        && sourceId.StartsWith(ScheduledTaskVerifier.SourcePrefix, StringComparison.OrdinalIgnoreCase)
+        && TaskComparison.IsTimingOnlyChange(difference.Before, difference.After);
 
     private static string Excerpt(string? value, int limit) => value is null ? "(absent)"
         : value.Length <= limit ? value : value[..limit] + "… (truncated)";

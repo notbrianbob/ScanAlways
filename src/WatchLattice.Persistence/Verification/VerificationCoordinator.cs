@@ -10,7 +10,8 @@ namespace WatchLattice.Persistence.Verification;
 /// <summary>Receives the full evidence for a change just before the auditor raises its alert.</summary>
 public interface IChangeEvidenceSink
 {
-    void Stage(string resource, PersistenceObservation observation);
+    /// <summary>True when the alert about to be raised will be verified automatically, so a VERIFY_* alert follows it.</summary>
+    bool Stage(string resource, PersistenceObservation observation);
 }
 
 /// <summary>
@@ -62,11 +63,12 @@ public sealed class PersistenceVerificationCoordinator : IAlertSink, IChangeEvid
 
     public static bool IsEntryAlert(string code) => code is "ENTRY_ADDED" or "ENTRY_CHANGED";
 
-    public void Stage(string resource, PersistenceObservation observation)
+    public bool Stage(string resource, PersistenceObservation observation)
     {
-        if (!_engine.CanVerify(observation)) return;
+        if (!_engine.CanVerify(observation)) return false;
         if (_staged.Count >= MaxStaged) _staged.Clear();
         _staged[ClipResource(resource)] = observation;
+        return _options.AutoVerifyAlerts;
     }
 
     /// <summary>Called by the alert hub for every new alert. Only queues work; never blocks or throws.</summary>

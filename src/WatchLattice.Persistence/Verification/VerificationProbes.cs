@@ -111,6 +111,7 @@ public static class Accounts
     public const string LocalSystem = "S-1-5-18";
     public const string LocalService = "S-1-5-19";
     public const string NetworkService = "S-1-5-20";
+    public const string Administrators = "S-1-5-32-544";
 
     private static readonly Dictionary<string, string> WellKnown = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -120,7 +121,7 @@ public static class Accounts
         ["INTERACTIVE"] = "S-1-5-4", [@"NT AUTHORITY\INTERACTIVE"] = "S-1-5-4",
         ["Authenticated Users"] = "S-1-5-11", [@"NT AUTHORITY\Authenticated Users"] = "S-1-5-11",
         ["Users"] = "S-1-5-32-545", [@"BUILTIN\Users"] = "S-1-5-32-545",
-        ["Administrators"] = "S-1-5-32-544", [@"BUILTIN\Administrators"] = "S-1-5-32-544",
+        ["Administrators"] = Administrators, [@"BUILTIN\Administrators"] = Administrators,
         ["Everyone"] = "S-1-1-0",
     };
 

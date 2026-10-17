@@ -24,7 +24,9 @@ default and runs inside the hub alongside the other modules.
 The first successful inventory of each source becomes its baseline, with an
 informational entry. Existing entries are **not certified safe**. Subsequent
 checks report additions and changes as warnings, and removals as information,
-including previous and current values. The baseline advances automatically
+including previous and current values. The one exception is a scheduled task
+whose trigger timing is the only thing that changed; see
+[How alerts are graded](#how-alerts-are-graded). The baseline advances automatically
 after observing changes; it is a last-observed inventory, not an approved list.
 It survives hub restarts. Polling defaults to five minutes.
 
@@ -45,7 +47,28 @@ more alert with the outcome:
 |---|---|---|
 | **Checks passed** | `VERIFY_PASSED` (Info) | Known configuration, expected file, valid signature, no unexpected changes. |
 | **Needs review** | `VERIFY_NEEDS_REVIEW` (Warning) | An unknown handler, an unfamiliar or missing signature, a missing file, or a check that could not be completed. |
-| **Suspicious** | `VERIFY_SUSPICIOUS` (Critical) | The program or COM class was changed, a per-user COM registration overrides the machine one, a signature is invalid, or the task differs from the trusted baseline. |
+| **Suspicious** | `VERIFY_SUSPICIOUS` (Critical) | The program or COM class was changed, the task gained highest privileges or now runs as SYSTEM or Administrators, a per-user COM registration overrides the machine one, a signature is invalid, or the task differs from the trusted baseline. |
+
+### How alerts are graded
+
+Windows and many updaters reschedule their own tasks all the time, so a change
+alert is graded by what changed. Nothing is suppressed: every change still
+raises `ENTRY_CHANGED`, is stored with its evidence, and is verified.
+
+| What changed | `ENTRY_*` alert | Verification alert |
+|---|---|---|
+| Only trigger timing (start or end time, delay, repetition, days or months) of an existing trigger | `ENTRY_CHANGED` as **Info**, titled *schedule timing only* | Usually `VERIFY_PASSED` (Info) for signed Windows tasks; any failed check still raises Warning or Critical |
+| A new task, Run value or Startup file | `ENTRY_ADDED` (Warning) | Tasks only: the outcome, as above |
+| What a task does or what starts it: arguments, account, a re-enabled task, a trigger added or removed or changed in type, event or user | `ENTRY_CHANGED` (Warning) | `VERIFY_NEEDS_REVIEW` (Warning) or worse |
+| The program or COM class a task runs, a gain of privileges (highest privileges, SYSTEM, Administrators), an invalid signature, a mismatch with the trusted baseline | `ENTRY_CHANGED` (Warning) | `VERIFY_SUSPICIOUS` (Critical) |
+
+The timing-only downgrade applies only when automatic verification will
+follow (`AutoVerifyAlerts` on, a scheduled task). With it off, or for Run keys
+and Startup files, which are not verified, every change stays a warning. The
+grade comes from the before/after definitions the auditor logged, which cover
+the fields listed under *Coverage*; a change to a task setting outside them is
+not seen at all. A Critical outcome is a strong reason to look, not proof of
+compromise, and a Warning or Info one is not proof of safety.
 
 None of these is a verdict that the task is harmless. A valid signature shows
 who published a file, not what a task makes it do, and a Microsoft signature
@@ -58,7 +81,7 @@ on the account) makes the result *needs review*, never *passed*.
 
 | Check | How |
 |---|---|
-| Change in the alert | The definitions logged before and after the change, compared field by field (for example `Triggers[0].StartBoundary`). A changed program or COM class fails; changed arguments, account or privileges, or a re-enabled task need review; a schedule-only change passes. |
+| Change in the alert | The definitions logged before and after the change, compared field by field (for example `Triggers[0].StartBoundary`). A changed program or COM class, or a gain of privileges, fails; changed arguments or account, a re-enabled task, or a trigger added, removed or changed in type, event, user or enabled state need review; a change to trigger timing only passes. |
 | Current task | Read from the Task Scheduler API (`ITaskService`, `IRegisteredTask.Xml`). A removed task needs review. |
 | Current task vs. alert | Has it changed again since the alert? Accounts are compared by SID, so `NETWORK SERVICE` and `S-1-5-20` match. Schedule drift is reported but passes. |
 | Known configuration | The trusted baseline of Windows components, or, for a changed task, what it runs and its account being unchanged from the earlier recording. A new task that is in neither needs review. |

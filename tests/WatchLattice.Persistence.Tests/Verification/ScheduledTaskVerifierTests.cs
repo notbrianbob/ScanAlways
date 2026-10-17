@@ -444,7 +444,7 @@ public sealed class ScheduledTaskVerifierTests
     }
 
     [Fact]
-    public async Task PrivilegeEscalationInTheAlert_NeedsReview()
+    public async Task PrivilegeGainInTheAlert_IsSuspicious()
     {
         const string task = @"\Vendor\Sync";
         const string exe = @"C:\Program Files\Vendor\sync.exe";
@@ -453,7 +453,59 @@ public sealed class ScheduledTaskVerifierTests
 
         var run = await _machine.VerifyAsync(Changed(task, ExecProjection(exe, null, user: TaskScenarios.User), ExecProjection(exe, null, user: "SYSTEM")));
 
+        Assert.Equal(VerificationOutcome.Suspicious, run.Outcome);
+        Assert.Equal(CheckStatus.Fail, run.Check("logged-change").Status);
+        Assert.Contains("more privileges", run.Check("logged-change").Detail);
+    }
+
+    [Fact]
+    public async Task RaisedRunLevelInTheAlert_IsSuspicious()
+    {
+        var run = await _machine.VerifyAsync(Changed(TaskPath, ComHandlerProjection(Clsid, "2026-10-17T03:12:44Z"),
+            ComHandlerProjection(Clsid, "2026-10-17T03:12:44Z", runLevel: "Highest")));
+
+        Assert.Equal(CheckStatus.Fail, run.Check("logged-change").Status);
+        Assert.Contains("RunLevel", run.Check("logged-change").Detail);
+    }
+
+    [Fact]
+    public async Task PrincipalChangeThatGainsNothing_NeedsReview()
+    {
+        const string task = @"\Vendor\Sync";
+        const string exe = @"C:\Program Files\Vendor\sync.exe";
+        _machine.Tasks.Tasks[task] = new(TaskReadStatus.Found, ExecXml(exe, null, userId: TaskScenarios.User));
+        _machine.Files.Add(exe, MicrosoftCatalog);
+
+        var run = await _machine.VerifyAsync(Changed(task, ExecProjection(exe, null, user: "SYSTEM"), ExecProjection(exe, null, user: TaskScenarios.User)));
+
         Assert.Equal(CheckStatus.Warning, run.Check("logged-change").Status);
         Assert.Contains("account or privileges", run.Check("logged-change").Detail);
     }
+
+    [Fact]
+    public async Task ChangedTriggerType_IsNotTreatedAsTimingOnly()
+    {
+        var before = ComHandlerProjection(Clsid, "2026-10-17T03:12:44Z");
+        var after = before.Replace("MSFT_TaskTimeTrigger", "MSFT_TaskLogonTrigger", StringComparison.Ordinal);
+
+        var run = await _machine.VerifyAsync(Changed(TaskPath, before, after));
+
+        Assert.Equal(CheckStatus.Warning, run.Check("logged-change").Status);
+        Assert.Contains("what starts the task", run.Check("logged-change").Detail);
+        Assert.False(TaskComparison.IsTimingOnlyChange(before, after));
+    }
+
+    [Theory]
+    [InlineData("""{"Triggers":[{"Type":"T","StartBoundary":"a"}]}""", """{"Triggers":[{"Type":"T","StartBoundary":"b"}]}""", true)]
+    [InlineData("""{"Triggers":[{"Type":"T","Interval":"PT1H","Delay":null}]}""", """{"Triggers":[{"Type":"T","Interval":"PT2H","Delay":"PT5M"}]}""", true)]
+    [InlineData("""{"Triggers":[{"Type":"T","StartBoundary":"a"}]}""", """{"Triggers":[{"Type":"T","StartBoundary":"a"}]}""", false)]
+    [InlineData("""{"Triggers":[{"Type":"T","StartBoundary":"a"}]}""", """{"Triggers":[{"Type":"T","StartBoundary":"a"},{"Type":"T","StartBoundary":"b"}]}""", false)]
+    [InlineData("""{"Triggers":[{"Type":"T","Subscription":"x"}]}""", """{"Triggers":[{"Type":"T","Subscription":"y"}]}""", false)]
+    [InlineData("""{"Triggers":[{"Type":"T","Enabled":false}]}""", """{"Triggers":[{"Type":"T","Enabled":true}]}""", false)]
+    [InlineData("""{"Triggers":[]}""", """{"Triggers":[{"Type":"T","StartBoundary":"a"}]}""", false)]
+    [InlineData("""{"Enabled":true,"Triggers":[{"StartBoundary":"a"}]}""", """{"Enabled":false,"Triggers":[{"StartBoundary":"b"}]}""", false)]
+    [InlineData("""{"Actions":[{"Arguments":"a"}],"Triggers":[{"StartBoundary":"a"}]}""", """{"Actions":[{"Arguments":"b"}],"Triggers":[{"StartBoundary":"b"}]}""", false)]
+    [InlineData("not json", """{"Triggers":[]}""", false)]
+    public void TimingOnly_CoversWhenATriggerFires_AndNothingElse(string before, string after, bool expected) =>
+        Assert.Equal(expected, TaskComparison.IsTimingOnlyChange(before, after));
 }

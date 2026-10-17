@@ -213,6 +213,62 @@ public static class TaskComparison
         && (change.Field.EndsWith(".Execute", StringComparison.OrdinalIgnoreCase) || change.Field.EndsWith(".ClassId", StringComparison.OrdinalIgnoreCase)
             || change.Field.EndsWith(".Kind", StringComparison.OrdinalIgnoreCase) || !change.Field.Contains('.'));
 
+    // Trigger fields that only move when an existing trigger fires. A trigger's type, event
+    // subscription, user or enabled state changes what starts the task, not just when.
+    private static readonly HashSet<string> TimingFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "StartBoundary", "EndBoundary", "Delay", "RandomDelay", "Interval", "Duration",
+        "DaysInterval", "WeeksInterval", "DaysOfWeek", "DaysOfMonth", "MonthsOfYear",
+    };
+
+    private static readonly System.Text.RegularExpressions.Regex TriggerField =
+        new(@"\ATriggers\[\d+\]\.(?<name>[A-Za-z]+)\z", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>A change to when an existing trigger fires, e.g. <c>Triggers[0].StartBoundary</c>. Adding or removing a trigger is not one.</summary>
+    public static bool IsTimingChange(FieldChange change)
+    {
+        if (change.Area != ChangeArea.Schedule) return false;
+        var match = TriggerField.Match(change.Field);
+        return match.Success && TimingFields.Contains(match.Groups["name"].Value);
+    }
+
+    /// <summary>True when every change is to trigger timing, and there is at least one.</summary>
+    public static bool IsTimingOnly(IReadOnlyList<FieldChange> changes) => changes.Count > 0 && changes.All(IsTimingChange);
+
+    /// <summary>
+    /// True when two logged definitions differ only in trigger timing. A
+    /// definition that cannot be read is never timing-only.
+    /// </summary>
+    public static bool IsTimingOnlyChange(string? before, string? after)
+    {
+        if (before is null || after is null) return false;
+        try { return IsTimingOnly(CompareLogged(before, after)); }
+        catch (Exception ex) when (ex is JsonException or InvalidDataException) { return false; }
+    }
+
+    /// <summary>
+    /// A principal change that gives the task more power: highest privileges,
+    /// or running as SYSTEM or the Administrators group, when it did not before.
+    /// </summary>
+    public static bool IsPrivilegeGain(FieldChange change, IAccountResolver accounts)
+    {
+        if (change.Area != ChangeArea.Principal) return false;
+        switch (change.Field.ToLowerInvariant())
+        {
+            case "runlevel":
+                return IsHighest(change.After) && !IsHighest(change.Before);
+            case "userid" or "groupid":
+                var after = Accounts.Normalize(change.After, accounts);
+                return after is Accounts.LocalSystem or Accounts.Administrators
+                    && !string.Equals(after, Accounts.Normalize(change.Before, accounts), StringComparison.OrdinalIgnoreCase);
+            default:
+                return false;
+        }
+    }
+
+    private static bool IsHighest(string? runLevel) =>
+        string.Equals(runLevel, "Highest", StringComparison.OrdinalIgnoreCase) || string.Equals(runLevel, "HighestAvailable", StringComparison.OrdinalIgnoreCase);
+
     private static void ComparePrincipal(string field, string? logged, string? current, IAccountResolver accounts,
         List<FieldChange> changes, List<string> notes)
     {
