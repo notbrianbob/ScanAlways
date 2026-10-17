@@ -83,6 +83,7 @@ Check 'tray user has read, not write, access to the feed' ($feedAcl -and -not ($
 $usersAcl = (Get-Acl -LiteralPath $InstallDir).Access | Where-Object { $_.IdentityReference.Value -eq 'BUILTIN\Users' }
 Check 'Users can only read the install folder' ($usersAcl -and -not ($usersAcl | Where-Object { $_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::WriteData }))
 
+Check 'hub registers its Application event log source' (Wait-Until { [Diagnostics.EventLog]::SourceExists('WatchLattice') })
 Check 'canaries are planted' (Wait-Until { (Get-Canaries $canaryFolder).Count -ge 3 })
 Check 'tray starts at sign-in' ("$((Get-ItemProperty -LiteralPath $RunKey -Name 'WatchLattice Tray' -ErrorAction SilentlyContinue).'WatchLattice Tray')" -like '*ScanAlways.Tray.exe*--feed*')
 Check 'Start menu shortcut exists' (Test-Path -LiteralPath $Shortcut)
@@ -116,6 +117,7 @@ Check 'feed folder is gone' (-not (Test-Path -LiteralPath (Split-Path $FeedDir))
 Check 'hub data is gone' (-not (Test-Path -LiteralPath $SystemData))
 Check 'sign-in entry is gone' ($null -eq (Get-ItemProperty -LiteralPath $RunKey -Name 'WatchLattice Tray' -ErrorAction SilentlyContinue))
 Check 'Start menu shortcut is gone' (-not (Test-Path -LiteralPath $Shortcut))
+Check 'event log source is gone' (-not [Diagnostics.EventLog]::SourceExists('WatchLattice'))
 Check 'Settings > Apps entry is gone' (-not (Test-Path -LiteralPath $UninstallKey))
 
 Remove-Item -LiteralPath $Scratch -Recurse -Force -ErrorAction SilentlyContinue
