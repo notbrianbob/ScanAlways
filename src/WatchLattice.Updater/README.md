@@ -29,13 +29,18 @@ without visiting GitHub by hand. It has two halves:
 4. Extracts with path checks: no entry may escape the staging folder, and the
    package must contain `Hub/ScanAlways.Protection.Service.exe` and
    `Tray/ScanAlways.Tray.exe`.
-5. Stops the `ScanAlways Protection` service if it is running, then swaps files.
+5. Checks the Authenticode signature of every `.exe` and `.dll` in the package.
+   Once the installed hub is signed, every file must be validly signed and
+   ours by the same publisher; a broken signature is always refused. Unsigned
+   installs such as v0.1.0 still accept unsigned packages. Details in
+   [code signing](../../docs/code-signing.md).
+6. Stops the `ScanAlways Protection` service if it is running, then swaps files.
    Every file the package replaces is first moved aside into a backup folder.
    If any step fails, all originals are moved back. Files the package does not
    contain, such as logs or anything you added, are never moved or deleted.
-6. Keeps your `appsettings.json`. The release's copy is written next to it as
+7. Keeps your `appsettings.json`. The release's copy is written next to it as
    `appsettings.json.default` so you can compare them.
-7. Starts the service again, and the tray restarts itself on the new version.
+8. Starts the service again, and the tray restarts itself on the new version.
 
 The tray is updated when it is installed next to the hub, as `…\Hub` and
 `…\Tray` (the layout of the release zip). Other layouts update the hub only.
@@ -80,7 +85,10 @@ raised as protection alerts.
 - **The checksum proves integrity, not authorship.** `SHA256SUMS.txt` comes
   from the same release as the zip, so it catches corrupted, truncated or
   mismatched downloads. It would not catch a malicious release published by
-  someone who controlled the repository. The binaries are not code-signed yet.
+  someone who controlled the repository. Code signatures add authorship: see
+  [code signing](../../docs/code-signing.md) for how the installer compares the
+  package's Authenticode signatures with the installed copy. Releases are
+  unsigned until SignPath signing is set up.
   Every release carries a GitHub build provenance attestation that you can
   check by hand with
   `gh attestation verify WatchLattice-<version>-win-x64.zip --repo notbrianbob/WatchLattice`;

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration for WatchLattice releases. Paste this into
+  the SignPath project as its default artifact configuration (see
+  docs/code-signing.md). The release workflow uploads the staged release
+  folder (Hub/, Tray/, LICENSE, README.md) as a GitHub artifact, and SignPath
+  signs only our own executables and DLLs listed here. Third-party DLLs are
+  already signed by Microsoft and pass through unchanged.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <directory path="Hub">
+      <pe-file-set>
+        <include path="ScanAlways.Protection.Service.exe" />
+        <include path="ScanAlways.Protection.Service.dll" />
+        <include path="WatchLattice.*.dll" min-matches="1" max-matches="unbounded" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </directory>
+    <directory path="Tray">
+      <pe-file-set>
+        <include path="ScanAlways.Tray.exe" />
+        <include path="ScanAlways.Tray.dll" />
+        <include path="WatchLattice.*.dll" min-matches="0" max-matches="unbounded" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </directory>
+  </zip-file>
+</artifact-configuration>

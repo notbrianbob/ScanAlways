@@ -132,3 +132,17 @@ internal static class Releases
         return Sha256Sums.Compute(stream);
     }
 }
+
+/// <summary>Answers signature checks by path: staged files (inside the update staging folder) or installed ones.</summary>
+internal sealed class FakeSignatureVerifier : ISignatureVerifier
+{
+    public FileSignature Installed { get; set; } = FileSignature.NotSigned;
+    public Func<string, FileSignature> Staged { get; set; } = _ => FileSignature.NotSigned;
+    public List<string> Checked { get; } = new();
+
+    public FileSignature Verify(string path)
+    {
+        Checked.Add(Path.GetFileName(path));
+        return path.Contains(UpdateApplier.StagingPrefix) ? Staged(Path.GetFileName(path)) : Installed;
+    }
+}
