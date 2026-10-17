@@ -17,7 +17,7 @@ public sealed class DefenderWatchdogModule : IScanAlwaysModule
     public string DisplayName => "Defender Health Watchdog";
 
     public string Description =>
-        "Checks that Defender's real-time protection, tamper protection and signatures stay on and current (read-only).";
+        "Checks that Defender's real-time protection, tamper protection and signatures stay on and current, and reports new exclusions and weakened ASR or cloud protection (read-only).";
 
     public bool EnabledByDefault => true;
 
