@@ -145,8 +145,8 @@ public class CanaryDeployerTests
         using var temp = new TempFolder();
         var options = temp.Options("a.docx", "b.docx", "c.docx");
         new CanaryDeployer(options, NullLogger.Instance).Deploy();
-        var b = Path.Combine(temp.Watched, "b.docx");
-        var c = Path.Combine(temp.Watched, "c.docx");
+        var b = Path.Join(temp.Watched, "b.docx");
+        var c = Path.Join(temp.Watched, "c.docx");
         File.SetAttributes(b, FileAttributes.Normal);
         File.WriteAllText(b, "tampered evidence");
         File.SetAttributes(c, FileAttributes.Normal);
